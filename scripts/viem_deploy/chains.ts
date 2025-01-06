@@ -3,7 +3,6 @@ import {
   optimismSepolia,
   arbitrum,
   base,
-  polygon,
   arbitrumSepolia,
   baseSepolia,
 } from '@alchemy/aa-core'
@@ -15,7 +14,7 @@ export const mainnetDep: Chain[] = [
   base,
   mantle,
   optimism,
-  polygon,
+  // polygon,
 ] as any
 
 // Test chains
