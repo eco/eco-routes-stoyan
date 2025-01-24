@@ -2,214 +2,453 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "./interfaces/IIntentSource.sol";
-import "./interfaces/SimpleProver.sol";
-import "./types/Intent.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {IIntentSource} from "./interfaces/IIntentSource.sol";
+import {BaseProver} from "./prover/BaseProver.sol";
+import {Intent, Route, Reward, Call} from "./types/Intent.sol";
+import {Semver} from "./libs/Semver.sol";
+
+import {IntentFunder} from "./IntentFunder.sol";
+import {IntentVault} from "./IntentVault.sol";
 
 /**
- * This contract is the source chain portion of the Eco Protocol's intent system.
- *
- * It can be used to create intents as well as withdraw the associated rewards.
- * Its counterpart is the inbox contract that lives on the destination chain.
- * This contract makes a call to the prover contract (on the sourcez chain) in order to verify intent fulfillment.
+ * @notice Source chain contract for the Eco Protocol's intent system
+ * @dev Used to create intents and withdraw associated rewards. Works in conjunction with
+ *      an inbox contract on the destination chain. Verifies intent fulfillment through
+ *      a prover contract on the source chain
+ * @dev This contract shouldn't not hold any funds or hold ony roles for other contracts,
+ *      as it executes arbitrary calls to other contracts when funding intents.
  */
-contract IntentSource is IIntentSource {
+contract IntentSource is IIntentSource, Semver {
     using SafeERC20 for IERC20;
 
-    // intent creation counter
-    uint256 public counter;
+    mapping(bytes32 intentHash => ClaimState) public claims;
 
-    // stores the intents
-    mapping(bytes32 intentHash => Intent) public intents;
+    address public fundingSource;
+
+    address public refundToken;
+
+    constructor() {}
 
     /**
-     * @dev counterStart is required to preserve nonce uniqueness in the event IntentSource needs to be redeployed.
-     * _counterStart the initial value of the counter
+     * @notice Retrieves claim state for a given intent hash
+     * @param intentHash Hash of the intent to query
+     * @return ClaimState struct containing claim information
      */
-    constructor(uint256 _counterStart) {
-        counter = _counterStart;
+    function getClaim(
+        bytes32 intentHash
+    ) external view returns (ClaimState memory) {
+        return claims[intentHash];
     }
 
-    function version() external pure returns (string memory) {
-        return Semver.version();
-    }
     /**
-     * @notice Creates an intent to execute instructions on a contract on a supported chain in exchange for a bundle of assets.
-     * @dev If a proof ON THE SOURCE CHAIN is not completed by the expiry time, the reward funds will not be redeemable by the solver, REGARDLESS OF WHETHER THE INSTRUCTIONS WERE EXECUTED.
-     * The onus of that time management (i.e. how long it takes for data to post to L1, etc.) is on the intent solver.
-     * @dev The inbox contract on the destination chain will be the msg.sender for the instructions that are executed.
-     * @param _destinationChainID the destination chain
-     * @param _inbox the inbox contract on the destination chain
-     * @param _targets the addresses on _destinationChainID at which the instructions need to be executed
-     * @param _data the instruction sets to be executed on _targets
-     * @param _rewardTokens the addresses of reward tokens
-     * @param _rewardAmounts the amounts of reward tokens
-     * @param _expiryTime the timestamp at which the intent expires
-     * @param _prover the prover against which the intent's status will be checked
+     * @notice Gets the funding source for the intent funder
+     * @return Address of the native token funding source
      */
-
-    function createIntent(
-        uint256 _destinationChainID,
-        address _inbox,
-        address[] calldata _targets,
-        bytes[] calldata _data,
-        address[] calldata _rewardTokens,
-        uint256[] calldata _rewardAmounts,
-        uint256 _expiryTime,
-        address _prover
-    ) external payable returns (bytes32) {
-        uint256 len = _targets.length;
-        if (len == 0 || len != _data.length) {
-            revert CalldataMismatch();
-        }
-
-        len = _rewardTokens.length;
-        if (len != _rewardAmounts.length) {
-            revert RewardsMismatch();
-        }
-
-        uint256 chainID = block.chainid;
-        bytes32 _nonce = keccak256(abi.encode(counter, chainID));
-        bytes32 intermediateHash =
-            keccak256(abi.encode(chainID, _destinationChainID, _targets, _data, _expiryTime, _nonce));
-        bytes32 intentHash = keccak256(abi.encode(_inbox, intermediateHash));
-
-        intents[intentHash] = Intent({
-            creator: msg.sender,
-            destinationChainID: _destinationChainID,
-            targets: _targets,
-            data: _data,
-            rewardTokens: _rewardTokens,
-            rewardAmounts: _rewardAmounts,
-            expiryTime: _expiryTime,
-            isActive: true,
-            nonce: _nonce,
-            prover: _prover,
-            rewardNative: msg.value
-        });
-
-        emitIntentCreated(intentHash, intents[intentHash]);
-        counter += 1;
-
-        for (uint256 i = 0; i < len; i++) {
-            IERC20(_rewardTokens[i]).safeTransferFrom(msg.sender, address(this), _rewardAmounts[i]);
-        }
-
-        return intentHash;
+    function getFundingSource() external view returns (address) {
+        return fundingSource;
     }
 
-    function emitIntentCreated(bytes32 _hash, Intent memory _intent) internal {
-        //gets around Stack Too Deep
-        emit IntentCreated(
-            _hash,
-            msg.sender,
-            _intent.destinationChainID,
-            _intent.targets,
-            _intent.data,
-            _intent.rewardTokens,
-            _intent.rewardAmounts,
-            _intent.expiryTime,
-            _intent.nonce,
-            _intent.prover,
-            _intent.rewardNative
+    /**
+     * @notice Gets the token used for vault refunds
+     * @return Address of the vault refund token
+     */
+    function getRefundToken() external view returns (address) {
+        return refundToken;
+    }
+
+    /**
+     * @notice Calculates the hash of an intent and its components
+     * @param intent The intent to hash
+     * @return intentHash Combined hash of route and reward
+     * @return routeHash Hash of the route component
+     * @return rewardHash Hash of the reward component
+     */
+    function getIntentHash(
+        Intent calldata intent
+    )
+        public
+        pure
+        returns (bytes32 intentHash, bytes32 routeHash, bytes32 rewardHash)
+    {
+        routeHash = keccak256(abi.encode(intent.route));
+        rewardHash = keccak256(abi.encode(intent.reward));
+        intentHash = keccak256(abi.encodePacked(routeHash, rewardHash));
+    }
+
+    /**
+     * @notice Calculates the deterministic address of the intent funder
+     * @param intent Intent to calculate vault address for
+     * @return Address of the intent funder
+     */
+    function intentFunderAddress(
+        Intent calldata intent
+    ) external view returns (address) {
+        (bytes32 intentHash, bytes32 routeHash, ) = getIntentHash(intent);
+        address vault = _getIntentVaultAddress(
+            intentHash,
+            routeHash,
+            intent.reward
         );
+        return _getIntentFunderAddress(vault, routeHash, intent.reward);
     }
-    /**
-     * @notice Withdraws the rewards associated with an intent to its claimant
-     * @param _hash the hash of the intent
-     */
 
-    function withdrawRewards(bytes32 _hash) external {
-        Intent storage intent = intents[_hash];
-        address claimant = SimpleProver(intent.prover).provenIntents(_hash);
-        address withdrawTo;
-        if (intent.isActive) {
-            if (claimant != address(0)) {
-                withdrawTo = claimant;
-            } else {
-                if (block.timestamp >= intent.expiryTime) {
-                    withdrawTo = intent.creator;
-                } else {
-                    revert UnauthorizedWithdrawal(_hash);
+    /**
+     * @notice Calculates the deterministic address of the intent vault
+     * @param intent Intent to calculate vault address for
+     * @return Address of the intent vault
+     */
+    function intentVaultAddress(
+        Intent calldata intent
+    ) external view returns (address) {
+        (bytes32 intentHash, bytes32 routeHash, ) = getIntentHash(intent);
+        return _getIntentVaultAddress(intentHash, routeHash, intent.reward);
+    }
+
+    /**
+     * @notice Funds an intent with native tokens and ERC20 tokens
+     * @dev Security: this allows to call any contract from the IntentSource,
+     *      which can impose a risk if anything relies on IntentSource to be msg.sender
+     * @param routeHash Hash of the route component
+     * @param reward Reward structure containing distribution details
+     * @param fundingAddress Address to fund the intent from
+     * @param permitCalls Array of permit calls to approve token transfers
+     * @param recoverToken Optional token address for handling incorrect vault transfers
+     */
+    function fundIntent(
+        bytes32 routeHash,
+        Reward calldata reward,
+        address fundingAddress,
+        Call[] calldata permitCalls,
+        address recoverToken
+    ) external payable {
+        bytes32 rewardHash = keccak256(abi.encode(reward));
+        bytes32 intentHash = keccak256(abi.encodePacked(routeHash, rewardHash));
+
+        address vault = _getIntentVaultAddress(intentHash, routeHash, reward);
+
+        emit IntentFunded(intentHash, fundingAddress);
+
+        int256 vaultBalanceDeficit = int256(reward.nativeValue) -
+            int256(vault.balance);
+
+        if (vaultBalanceDeficit > 0 && msg.value > 0) {
+            uint256 nativeAmount = msg.value > uint256(vaultBalanceDeficit)
+                ? uint256(vaultBalanceDeficit)
+                : msg.value;
+
+            payable(vault).transfer(nativeAmount);
+
+            if (msg.value > nativeAmount) {
+                (bool success, ) = payable(msg.sender).call{
+                    value: msg.value - nativeAmount
+                }("");
+
+                if (!success) {
+                    revert NativeRewardTransferFailed();
                 }
             }
-            intent.isActive = false;
-            emit Withdrawal(_hash, withdrawTo);
-            uint256 len = intent.rewardTokens.length;
-            for (uint256 i = 0; i < len; i++) {
-                IERC20(intent.rewardTokens[i]).safeTransfer(withdrawTo, intent.rewardAmounts[i]);
+        }
+
+        uint256 callsLength = permitCalls.length;
+
+        for (uint256 i = 0; i < callsLength; i++) {
+            Call calldata call = permitCalls[i];
+
+            (bool success, ) = call.target.call(call.data);
+
+            if (!success) {
+                revert PermitCallFailed();
             }
-            uint256 nativeReward = intent.rewardNative;
-            if (nativeReward > 0) {
-                (bool success,) = payable(withdrawTo).call{value: nativeReward}("");
-                require(success, "Native transfer failed.");
+        }
+
+        fundingSource = fundingAddress;
+
+        if (recoverToken != address(0)) {
+            refundToken = recoverToken;
+        }
+
+        new IntentFunder{salt: routeHash}(vault, reward);
+
+        fundingSource = address(0);
+
+        if (recoverToken != address(0)) {
+            refundToken = address(0);
+        }
+    }
+
+    /**
+     * @notice Creates an intent to execute instructions on a supported chain in exchange for assets
+     * @dev If source chain proof isn't completed by expiry, rewards aren't redeemable regardless of execution.
+     *      Solver must manage timing considerations (e.g., L1 data posting delays)
+     * @param intent The intent struct containing all parameters
+     * @param fund Whether to fund the reward or not
+     * @return intentHash The hash of the created intent
+     */
+    function publishIntent(
+        Intent calldata intent,
+        bool fund
+    ) external payable returns (bytes32 intentHash) {
+        Route calldata route = intent.route;
+        Reward calldata reward = intent.reward;
+
+        uint256 rewardsLength = reward.tokens.length;
+        bytes32 routeHash;
+
+        (intentHash, routeHash, ) = getIntentHash(intent);
+
+        if (claims[intentHash].status != uint8(ClaimStatus.Initiated)) {
+            revert IntentAlreadyExists(intentHash);
+        }
+
+        emit IntentCreated(
+            intentHash,
+            route.salt,
+            route.source,
+            route.destination,
+            route.inbox,
+            route.calls,
+            reward.creator,
+            reward.prover,
+            reward.deadline,
+            reward.nativeValue,
+            reward.tokens
+        );
+
+        address vault = _getIntentVaultAddress(intentHash, routeHash, reward);
+
+        if (fund && !_isIntentFunded(intent, vault)) {
+            if (reward.nativeValue > 0) {
+                if (msg.value < reward.nativeValue) {
+                    revert InsufficientNativeReward();
+                }
+
+                payable(vault).transfer(reward.nativeValue);
+
+                if (msg.value > reward.nativeValue) {
+                    (bool success, ) = payable(msg.sender).call{
+                        value: msg.value - reward.nativeValue
+                    }("");
+
+                    if (!success) {
+                        revert NativeRewardTransferFailed();
+                    }
+                }
             }
+
+            for (uint256 i = 0; i < rewardsLength; i++) {
+                IERC20(reward.tokens[i].token).safeTransferFrom(
+                    msg.sender,
+                    vault,
+                    reward.tokens[i].amount
+                );
+            }
+        }
+    }
+
+    /**
+     * @notice Checks if an intent is properly funded
+     * @param intent Intent to validate
+     * @return True if intent is properly funded, false otherwise
+     */
+    function isIntentFunded(
+        Intent calldata intent
+    ) external view returns (bool) {
+        (bytes32 intentHash, bytes32 routeHash, ) = getIntentHash(intent);
+        address vault = _getIntentVaultAddress(
+            intentHash,
+            routeHash,
+            intent.reward
+        );
+
+        return _isIntentFunded(intent, vault);
+    }
+
+    /**
+     * @notice Withdraws rewards associated with an intent to its claimant
+     * @param routeHash Hash of the intent's route
+     * @param reward Reward structure of the intent
+     */
+    function withdrawRewards(bytes32 routeHash, Reward calldata reward) public {
+        bytes32 rewardHash = keccak256(abi.encode(reward));
+        bytes32 intentHash = keccak256(abi.encodePacked(routeHash, rewardHash));
+
+        address claimant = BaseProver(reward.prover).provenIntents(intentHash);
+
+        // Claim the rewards if the intent has not been claimed
+        if (
+            claimant != address(0) &&
+            claims[intentHash].status == uint8(ClaimStatus.Initiated)
+        ) {
+            claims[intentHash].claimant = claimant;
+
+            emit Withdrawal(intentHash, claimant);
+
+            new IntentVault{salt: routeHash}(intentHash, reward);
+
+            claims[intentHash].status = uint8(ClaimStatus.Claimed);
+
+            return;
+        }
+
+        if (claimant == address(0)) {
+            revert UnauthorizedWithdrawal(intentHash);
         } else {
-            revert NothingToWithdraw(_hash);
+            revert RewardsAlreadyWithdrawn(intentHash);
         }
     }
+
     /**
-     * @notice Withdraws a batch of intents that all have the same claimant
-     * @param _hashes the array of intent hashes
-     * @param _claimant the claimant
-     * @dev For best performance, group intents s.t. intents with the same reward token are consecutive. If there are intents with multiple reward tokens, put them at the end. Ideally don't include those kinds of intents here though.
+     * @notice Batch withdraws multiple intents with the same claimant
+     * @param routeHashes Array of route hashes for the intents
+     * @param rewards Array of reward structures for the intents
      */
+    function batchWithdraw(
+        bytes32[] calldata routeHashes,
+        Reward[] calldata rewards
+    ) external {
+        uint256 length = routeHashes.length;
 
-    function batchWithdraw(bytes32[] calldata _hashes, address _claimant) external {
-        if (_claimant == address(0)) {
-            revert BadClaimant(0x0);
+        if (length != rewards.length) {
+            revert ArrayLengthMismatch();
         }
-        address erc20;
-        uint256 balance;
-        uint256 nativeRewards;
 
-        for (uint256 i = 0; i < _hashes.length; i++) {
-            bytes32 _hash = _hashes[i];
-            Intent storage intent = intents[_hash];
-            if (!intent.isActive) {
-                revert NothingToWithdraw(_hash);
-            }
-            address claimant = SimpleProver(intent.prover).provenIntents(_hash);
-            if (claimant != _claimant) {
-                if (intent.creator != _claimant) {
-                    revert BadClaimant(_hash);
-                }
-                // trying to reclaim rewards for an expired intent
-                if (claimant != address(0) || block.timestamp < intent.expiryTime) {
-                    // intent is not expired
-                    revert UnauthorizedWithdrawal(_hash);
-                }
-            }
-            intent.isActive = false;
-            for (uint256 j = 0; j < intent.rewardTokens.length; j++) {
-                address newToken = intent.rewardTokens[j];
-                if (erc20 == newToken) {
-                    balance += intent.rewardAmounts[j];
-                } else {
-                    safeERC20Transfer(erc20, _claimant, balance);
-                    erc20 = newToken;
-                    balance = intent.rewardAmounts[j];
-                }
-            }
-            nativeRewards += intent.rewardNative;
-            emit Withdrawal(_hash, _claimant);
-        }
-        safeERC20Transfer(erc20, _claimant, balance);
-        if (nativeRewards > 0) {
-            (bool success,) = payable(_claimant).call{value: nativeRewards}("");
-            require(success, "Native transfer failed.");
+        for (uint256 i = 0; i < length; i++) {
+            withdrawRewards(routeHashes[i], rewards[i]);
         }
     }
 
-    function safeERC20Transfer(address _token, address _to, uint256 _amount) internal {
-        if (_token != address(0)) {
-            IERC20(_token).safeTransfer(_to, _amount);
+    /**
+     * @notice Refunds rewards to the intent creator
+     * @param routeHash Hash of the intent's route
+     * @param reward Reward structure of the intent
+     * @param token Optional token address for handling incorrect vault transfers
+     */
+    function refundIntent(
+        bytes32 routeHash,
+        Reward calldata reward,
+        address token
+    ) external {
+        bytes32 rewardHash = keccak256(abi.encode(reward));
+        bytes32 intentHash = keccak256(abi.encodePacked(routeHash, rewardHash));
+
+        if (token != address(0)) {
+            refundToken = token;
+        }
+
+        emit Refund(intentHash, reward.creator);
+
+        new IntentVault{salt: routeHash}(intentHash, reward);
+
+        if (claims[intentHash].status == uint8(ClaimStatus.Initiated)) {
+            claims[intentHash].status = uint8(ClaimStatus.Refunded);
+        }
+
+        if (token != address(0)) {
+            refundToken = address(0);
         }
     }
 
-    function getIntent(bytes32 identifier) public view returns (Intent memory) {
-        return intents[identifier];
+    /**
+     * @notice Validates that an intent's vault holds sufficient rewards
+     * @dev Checks both native token and ERC20 token balances
+     * @param intent Intent to validate
+     * @param vault Address of the intent's vault
+     * @return True if vault has sufficient funds, false otherwise
+     */
+    function _isIntentFunded(
+        Intent calldata intent,
+        address vault
+    ) internal view returns (bool) {
+        Reward calldata reward = intent.reward;
+        uint256 rewardsLength = reward.tokens.length;
+
+        if (vault.balance < reward.nativeValue) return false;
+
+        for (uint256 i = 0; i < rewardsLength; i++) {
+            address token = reward.tokens[i].token;
+            uint256 amount = reward.tokens[i].amount;
+            uint256 balance = IERC20(token).balanceOf(vault);
+
+            if (balance < amount) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @notice Calculates the deterministic address of an intent funder using CREATE2
+     * @dev Follows EIP-1014 for address calculation
+     * @param vault Address of the intent vault
+     * @param routeHash Hash of the route component
+     * @param reward Reward structure
+     * @return The calculated vault address
+     */
+    function _getIntentFunderAddress(
+        address vault,
+        bytes32 routeHash,
+        Reward calldata reward
+    ) internal view returns (address) {
+        /* Convert a hash which is bytes32 to an address which is 20-byte long
+        according to https://docs.soliditylang.org/en/v0.8.9/control-structures.html?highlight=create2#salted-contract-creations-create2 */
+        return
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                hex"ff",
+                                address(this),
+                                routeHash,
+                                keccak256(
+                                    abi.encodePacked(
+                                        type(IntentFunder).creationCode,
+                                        abi.encode(vault, reward)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+    }
+
+    /**
+     * @notice Calculates the deterministic address of an intent vault using CREATE2
+     * @dev Follows EIP-1014 for address calculation
+     * @param intentHash Hash of the full intent
+     * @param routeHash Hash of the route component
+     * @param reward Reward structure
+     * @return The calculated vault address
+     */
+    function _getIntentVaultAddress(
+        bytes32 intentHash,
+        bytes32 routeHash,
+        Reward calldata reward
+    ) internal view returns (address) {
+        /* Convert a hash which is bytes32 to an address which is 20-byte long
+        according to https://docs.soliditylang.org/en/v0.8.9/control-structures.html?highlight=create2#salted-contract-creations-create2 */
+        return
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                hex"ff",
+                                address(this),
+                                routeHash,
+                                keccak256(
+                                    abi.encodePacked(
+                                        type(IntentVault).creationCode,
+                                        abi.encode(intentHash, reward)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
     }
 }
