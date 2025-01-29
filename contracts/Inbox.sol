@@ -143,19 +143,20 @@ contract Inbox is IInbox, Ownable, Semver {
             _metadata,
             _postDispatchHook
         );
-        if (msg.value < fee) {
-            revert InsufficientFee(fee);
-        }
         bytes[] memory results = _fulfill(
             _route,
             _rewardHash,
             _claimant,
             _expectedHash
         );
-        if (msg.value > fee) {
-            (bool success, ) = payable(msg.sender).call{value: msg.value - fee}(
-                ""
-            );
+        uint256 nativeBalance = address(this).balance;
+        if (nativeBalance < fee) {
+            revert InsufficientFee(fee);
+        }
+        if (nativeBalance > fee) {
+            (bool success, ) = payable(msg.sender).call{
+                value: nativeBalance - fee
+            }("");
             if (!success) {
                 revert NativeTransferFailed();
             }
@@ -325,22 +326,6 @@ contract Inbox is IInbox, Ownable, Semver {
                     IPostDispatchHook(_postDispatchHook)
                 )
         );
-    }
-
-    /**
-     * @notice Enables native token transfers on the destination chain
-     * @dev Can only be called by the contract itself
-     * @param _to Recipient address
-     * @param _amount Amount of native tokens to send
-     */
-    function transferNative(address payable _to, uint256 _amount) public {
-        if (msg.sender != address(this)) {
-            revert UnauthorizedTransferNative();
-        }
-        (bool success, ) = _to.call{value: _amount}("");
-        if (!success) {
-            revert NativeTransferFailed();
-        }
     }
 
     /**
