@@ -20,23 +20,15 @@ import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
 import { SemanticContext } from './sr-prepare'
-import { 
-  ENV_VARS, 
-  PACKAGE, 
-  PATHS, 
-  getBuildDirPath, 
-  getTsBuildDirPath 
-} from './constants'
+import { ENV_VARS, PACKAGE } from './constants'
 
 const execPromise = promisify(exec)
 
 /**
- * Publishes the built packages to npm
- * Publishes both the main package with Solidity files and the TypeScript-only package
- * 
+ * Publishes the built package to npm
  * @param pluginConfig Plugin configuration
  * @param context The semantic release context
- * @returns Object containing package names and URLs
+ * @returns Object containing package name and URL
  */
 export async function publish(
   pluginConfig: any,
@@ -51,20 +43,14 @@ export async function publish(
     // Determine the tag to use for publishing
     // Use 'latest' for stable releases, 'beta' for prerelease versions
     const tag = nextRelease?.type === 'prerelease' ? 'beta' : 'latest'
-    const version = nextRelease?.version || ''
 
-    logger.log(`Publishing packages version ${version} with tag ${tag}`)
+    logger.log(
+      `Publishing package version ${nextRelease?.version} with tag ${tag}`,
+    )
 
-    // Get directory paths
-    const buildDir = getBuildDirPath(cwd)
-    const tsBuildDir = getTsBuildDirPath(cwd)
+    // Use the build directory
+    const buildDir = path.join(cwd, 'build')
 
-    // Publish results
-    const results = []
-
-    // 1. First publish the main package with Solidity files
-    logger.log(`Publishing main package: ${PACKAGE.ROUTES_PACKAGE_NAME}@${version}`)
-    
     // Ensure the dist directory exists after compilation
     const distDirPath = path.join(buildDir, 'dist')
     if (!fs.existsSync(distDirPath)) {
@@ -73,50 +59,29 @@ export async function publish(
       )
     }
 
-    // Publish the main package with the appropriate tag
-    await publishPackage(buildDir, tag, logger)
-    
-    logger.log(
-      `✅ Main package ${PACKAGE.ROUTES_PACKAGE_NAME}@${version} published successfully with tag ${tag}`,
-    )
-    
-    results.push({
-      name: PACKAGE.ROUTES_PACKAGE_NAME,
-      url: `https://www.npmjs.com/package/${PACKAGE.ROUTES_PACKAGE_NAME}`,
-    })
+    // Publish the package with the appropriate tag
+    // Note: Make sure NPM_TOKEN environment variable is set for authentication
+    const publishCommand = `cd ${buildDir} && npm publish --tag ${tag} --access public`
+    logger.log(`Executing: ${publishCommand}`)
 
-    // 2. Then publish the TypeScript-only package
-    logger.log(`Publishing TypeScript package: ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version}`)
-    
-    // Ensure the TypeScript build directory exists
-    if (!fs.existsSync(tsBuildDir)) {
-      throw new Error(
-        `TypeScript build directory not found at ${tsBuildDir}`,
-      )
+    const { stdout, stderr } = await execPromise(publishCommand)
+
+    if (stdout) {
+      logger.log(stdout)
     }
-    
-    // Ensure the dist directory exists in TypeScript build
-    const tsDistDirPath = path.join(tsBuildDir, 'dist')
-    if (!fs.existsSync(tsDistDirPath)) {
-      throw new Error(
-        `TypeScript compilation failed: dist directory not found at ${tsDistDirPath}`,
-      )
+
+    if (stderr) {
+      logger.error(stderr)
     }
-    
-    // Publish the TypeScript package with the appropriate tag
-    await publishPackage(tsBuildDir, tag, logger)
-    
+
     logger.log(
-      `✅ TypeScript package ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} published successfully with tag ${tag}`,
+      `✅ Package ${nextRelease?.version} published successfully with tag ${tag}`,
     )
-    
-    results.push({
+
+    return {
       name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
       url: `https://www.npmjs.com/package/${PACKAGE.ROUTES_TS_PACKAGE_NAME}`,
-    })
-
-    // Return results for both packages
-    return results
+    }
   } catch (error) {
     logger.error('❌ Package publish failed')
     logger.error((error as Error).message)
@@ -124,60 +89,26 @@ export async function publish(
   }
 }
 
-/**
- * Helper function to publish a package from a specific directory
- * 
- * @param packageDir - Directory containing the package to publish
- * @param tag - The npm tag to publish with (latest or beta)
- * @param logger - Logger instance for output messages
- */
-async function publishPackage(
-  packageDir: string,
-  tag: string,
-  logger: Logger
-): Promise<void> {
-  // Make sure NPM_TOKEN environment variable is set for authentication
-  const publishCommand = `cd ${packageDir} && npm publish --tag ${tag} --access public`
-  logger.log(`Executing: ${publishCommand}`)
-
-  const { stdout, stderr } = await execPromise(publishCommand)
-
-  if (stdout) {
-    logger.log(stdout)
-  }
-
-  if (stderr) {
-    logger.error(stderr)
-  }
-}
-
-/**
- * Determines whether packages should be published based on environment variables
- * 
- * @param version - The version being published
- * @returns Boolean indicating whether to publish packages
- */
 function shouldWePublish(version: string): boolean {
   // Check if running in GitHub Actions
   const isGitHubCI = process.env[ENV_VARS.CI] === 'true'
   const notDryRun = process.env[ENV_VARS.NOT_DRY_RUN] === 'true'
 
-  // Only publish if running in CI or explicitly set to not be a dry run
+  // Only publish if running in CI and it's not a PR
   const shouldPublish = isGitHubCI || notDryRun
 
   if (!shouldPublish) {
     console.log(
-      'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
+      'DRY RUN: Skipping actual npm publish. Would have published package to npm.',
     )
-    console.log(`Would publish: ${PACKAGE.ROUTES_PACKAGE_NAME}@${version}`)
     console.log(`Would publish: ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version}`)
     console.log(
-      `Not publishing. Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`,
+      `Not publishing, Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`,
     )
     return false
   } else {
     console.log(
-      `Publishing ${PACKAGE.ROUTES_PACKAGE_NAME}@${version} and ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} to npm...`,
+      `Publishing ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} to npm...`,
     )
     return true
   }
