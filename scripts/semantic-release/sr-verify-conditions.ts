@@ -1,3 +1,19 @@
+/**
+ * @file sr-verify-conditions.ts
+ *
+ * Implements the verifyConditions step in the semantic-release lifecycle.
+ * This is the first step that runs in the process and ensures all prerequisites
+ * are met before attempting a release.
+ * 
+ * The verification process includes:
+ * - Checking environment variables for deployment credentials
+ * - Validating package.json and its fields
+ * - Ensuring the new version is valid and greater than existing versions
+ * - Verifying npm publishing credentials
+ * 
+ * If any verification fails, the release process is aborted with a clear error message.
+ */
+
 import path from 'path'
 import fs from 'fs'
 import {
@@ -9,18 +25,20 @@ import { ENV_VARS, PATHS } from './constants'
 import { SemanticContext, SemanticPluginConfig } from './sr-prepare'
 import dotenv from 'dotenv'
 dotenv.config()
+
 /**
  * Verifies conditions before a release can proceed
  * This is the first step in the semantic-release lifecycle
  *
  * This function:
- * 1. Checks that required environment variables are set
+ * 1. Checks that required environment variables are set for deployments
  * 2. Validates the package.json exists and has required fields
  * 3. Verifies the next version is valid and greater than what's published
- * 4. Ensures publishing credentials are available if needed
+ * 4. Ensures publishing credentials are available in the environment
  *
  * @param pluginConfig - Plugin configuration options
- * @param context - Semantic release context
+ * @param context - Semantic release context with version and logging info
+ * @throws Error if any verification check fails
  */
 export async function verifyConditions(
   pluginConfig: SemanticPluginConfig,

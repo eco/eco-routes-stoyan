@@ -1,3 +1,18 @@
+/**
+ * @file verify-contracts.ts
+ *
+ * Handles verification of deployed smart contracts on blockchain explorers (like Etherscan).
+ * This process runs after deployment but before publishing to ensure that contract code
+ * is publicly verified on-chain.
+ *
+ * Key features:
+ * - Reads deployment results from the deployment step
+ * - Obtains verification API keys from environment variables or local file
+ * - Runs the verification script with appropriate parameters
+ * - Handles potential verification failures gracefully (non-blocking for releases)
+ * - Warns about large numbers of contracts that might cause timeouts
+ */
+
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -13,6 +28,7 @@ import { Logger } from './helpers'
 /**
  * Plugin to handle contract verification during semantic-release process
  * Will verify contracts deployed during the prepare phase
+ * Contract verification makes the contract source code viewable on block explorers
  */
 export async function verifyContracts(context: SemanticContext): Promise<void> {
   const { nextRelease, logger, cwd } = context

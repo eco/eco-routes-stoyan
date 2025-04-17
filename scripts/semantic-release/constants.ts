@@ -2,6 +2,7 @@ import path from 'path'
 
 /**
  * File paths and directories used across semantic-release scripts
+ * Centralizes all path definitions to avoid duplication and make maintenance easier
  */
 export const PATHS = {
   // Build related paths
@@ -26,6 +27,7 @@ export const PATHS = {
 
 /**
  * Environment variable names used across semantic-release scripts
+ * These are used for deployment credentials, verification keys, and controlling publishing behavior
  */
 export const ENV_VARS = {
   // Deployment related
@@ -47,7 +49,8 @@ export const ENV_VARS = {
 }
 
 /**
- * Package related constants
+ * Package related constants including npm package names
+ * Used to maintain consistent naming between JavaScript and Solidity components
  */
 export const PACKAGE = {
   ROUTES_PACKAGE_NAME: '@eco-foundation/eco-routes',
@@ -55,7 +58,8 @@ export const PACKAGE = {
 }
 
 /**
- * Threshold values and limits
+ * Threshold values and limits for various operations
+ * Used to warn about potential performance or security issues
  */
 export const THRESHOLDS = {
   // Number of verification entries that might cause performance concerns

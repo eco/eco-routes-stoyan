@@ -1,3 +1,20 @@
+/**
+ * @file sr-build-package.ts
+ *
+ * Responsible for building the TypeScript package for distribution to npm.
+ * This process includes:
+ * 
+ * 1. Collecting Solidity ABIs and contract artifacts for TypeScript consumption
+ * 2. Creating type-safe contract interfaces and address exports
+ * 3. Formatting deployed addresses for different chains
+ * 4. Generating a CSV export of contract addresses for non-code consumption
+ * 5. Setting up proper package.json with the right dependencies and metadata
+ * 6. Compiling TypeScript code for distribution
+ *
+ * The resulting package enables developers to easily interact with the protocol's
+ * deployed contracts with full type safety and current addresses.
+ */
+
 import fs from 'fs'
 import path from 'path'
 import { exec } from 'child_process'
@@ -25,11 +42,9 @@ interface AddressesJson {
   }
 }
 
-// need to ge tthe publishing of build and buildts going
-// then need to set up dispatches
-// need to rebase on the audit branch
 /**
  * Represents the structure of an ABI file
+ * Contains contract interface details needed for TypeScript code generation
  */
 interface AbiFile {
   abi: any[]
@@ -40,8 +55,12 @@ interface AbiFile {
 }
 
 /**
- * Builds the package for distribution
- * @param context The semantic release context
+ * Builds the complete TypeScript package for distribution
+ * This is the main entry point for the package building process that orchestrates
+ * all the steps needed to create a distributable npm package with contract ABIs,
+ * addresses, and TypeScript definitions
+ * 
+ * @param context The semantic release context containing version and logging info
  */
 export async function buildPackage(context: SemanticContext): Promise<void> {
   const { nextRelease, logger, cwd } = context
@@ -151,8 +170,12 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
 
 /**
  * Generates TypeScript files from ABI JSON files
+ * Converts raw contract ABI JSON files into fully typed TypeScript modules
+ * with proper typing for viem integration. Creates index files for easy imports
+ * and removes the original JSON files to keep the package clean.
+ * 
  * @param buildDir The directory to build in
- * @param logger The logger to use
+ * @param logger The logger to use for output messages
  */
 function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
   // Directory containing the JSON files
@@ -233,9 +256,13 @@ function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
 
 /**
  * Generates a CSV file from the addresses JSON
+ * Creates a human-readable CSV export of deployed contract addresses
+ * by chain ID. This allows non-developers to easily access contract addresses
+ * without parsing JSON or writing code.
+ * 
  * @param addresses Object containing chain IDs and contract addresses
  * @param buildDir Directory to store the output CSV
- * @param logger The logger instance
+ * @param logger The logger instance for output messages
  */
 function generateCsvFile(
   addresses: AddressesJson,
@@ -273,10 +300,14 @@ function generateCsvFile(
 
 /**
  * Generates the main index.ts file with addresses exports
+ * Creates the TypeScript entry point with type-safe exports of all contract
+ * addresses and helper functions. Includes TypeScript type definitions for
+ * chain configurations and utility functions to access addresses by chain ID.
+ * 
  * @param addresses Object containing chain IDs and contract addresses
  * @param buildDir Directory to store the output file
- * @param version Package version number
- * @param logger The logger instance
+ * @param version Package version number to embed in the file
+ * @param logger The logger instance for output messages
  */
 function generateIndexFile(
   addresses: AddressesJson,
@@ -330,6 +361,10 @@ export function getContractAddress<T extends EcoChainIds>(
 
 /**
  * Lists all files in a directory recursively
+ * Utility function to find all files within a directory structure
+ * maintaining relative paths, which is useful for copying contract source
+ * files while preserving directory structure.
+ * 
  * @param dir Directory to list files from
  * @returns Array of file paths relative to the provided directory
  */
@@ -357,9 +392,14 @@ function listFilesRecursively(dir: string): string[] {
 
 /**
  * Copies essential files to the build directory and creates package.json
+ * Sets up the npm package metadata with proper dependencies, files to include,
+ * and other required package.json fields. Also copies documentation files
+ * like README.md and LICENSE to the package.
+ * 
  * @param buildDir Directory to copy files to
- * @param cwd Current working directory
- * @param logger The logger instance
+ * @param cwd Current working directory for source file paths
+ * @param version Package version to use in package.json
+ * @param logger The logger instance for output messages
  */
 function copyOtherPackageFiles(
   buildDir: string,
@@ -425,8 +465,13 @@ function copyOtherPackageFiles(
 
 /**
  * Creates tsconfig.json for TypeScript compilation
+ * Sets up the TypeScript compiler configuration for the npm package
+ * with the right target settings, module type, and output directory.
+ * This ensures the package is built with the correct settings for
+ * compatibility with various JavaScript environments.
+ * 
  * @param buildDir Directory to create the config in
- * @param logger The logger instance
+ * @param logger The logger instance for output messages
  */
 function createTsConfig(buildDir: string, logger: Logger): void {
   const tsConfig = {

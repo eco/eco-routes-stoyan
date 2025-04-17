@@ -1,7 +1,18 @@
 /**
  * @file sr-publish.ts
  *
- * Handles publishing the built package to npm as part of the semantic-release process
+ * Handles publishing the built package to npm as part of the semantic-release process.
+ * This is the final step in the semantic-release lifecycle.
+ *
+ * Key features:
+ * - Controls whether packages are actually published (dry-run vs. real publish)
+ * - Handles npm tag selection (latest vs. beta for prereleases)
+ * - Publishes from the build directory with complete package contents
+ * - Verifies package contents before publishing
+ * - Returns metadata about the published package for semantic-release
+ *
+ * The publish step only executes in CI environments or when explicitly
+ * enabled to prevent accidental publishing during development.
  */
 
 import { exec } from 'child_process'

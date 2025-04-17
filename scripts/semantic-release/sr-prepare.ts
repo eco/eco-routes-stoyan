@@ -1,3 +1,20 @@
+/**
+ * @file sr-prepare.ts
+ *
+ * Implements the prepare step in the semantic-release lifecycle.
+ * This step runs after the version has been determined and version files updated,
+ * but before the actual publishing to npm.
+ *
+ * Responsibilities:
+ * 1. Building the Hardhat project
+ * 2. Deploying contracts to all configured networks
+ * 3. Verifying deployed contracts on block explorers
+ * 4. Building the TypeScript package for distribution
+ *
+ * The prepare step is crucial for ensuring that what gets published
+ * contains all the necessary artifacts and deployed contract addresses.
+ */
+
 import path from 'path'
 import fs from 'fs'
 import { buildPackage } from './sr-build-package'

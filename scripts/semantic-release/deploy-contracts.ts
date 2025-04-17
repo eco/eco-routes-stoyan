@@ -4,13 +4,20 @@
  * This file is responsible for deploying smart contracts using deterministic
  * deployment (CREATE3) with specific salts derived from the package version.
  *
- * It supports deploying to multiple environments (production and pre-production)
- * with different salts but in the same deployment process.
+ * The deterministic deployment approach ensures that contracts with the same version
+ * and salt will have the same address across different deployments and networks,
+ * which is critical for cross-chain protocols.
+ *
+ * Key features:
+ * - Supports deploying to multiple environments (production and pre-production)
+ * - Uses different salts for different environments but in the same deployment process
+ * - Generates production and pre-production addresses from semantic version
+ * - Stores deployment results for consumption by client libraries
  *
  * The deployment process:
  * 1. Computes salt values based on semantic version
  * 2. Creates a single results file for all deployments
- * 3. Deploys contracts to each environment with appropriate salt, skipping if its already deployed
+ * 3. Deploys contracts to each environment with appropriate salt, skipping if already deployed
  * 4. Collects and combines results from all deployments
  * 5. Formats and saves deployment data to JSON for use in the package
  */

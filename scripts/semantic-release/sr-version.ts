@@ -5,6 +5,15 @@
  * This step is responsible for updating version information in
  * various files like Solidity contracts and package.json before
  * the prepare step runs.
+ *
+ * Version updates include:
+ * 1. Updating the semver version in package.json
+ * 2. Finding and updating all Solidity contract files that implement version() functions
+ * 3. Including the git hash in the version string for Solidity contracts
+ *
+ * The version step is critical for ensuring that deployed contracts report
+ * the correct version information and maintaining consistency between
+ * on-chain and off-chain components.
  */
 
 import { SemanticContext, SemanticPluginConfig } from './sr-prepare'

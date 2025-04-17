@@ -1,3 +1,17 @@
+/**
+ * @file eco-routes-local.ts
+ *
+ * Local test runner for the semantic-release process
+ * Allows testing the full semantic-release lifecycle locally without requiring
+ * the actual semantic-release tool or CI environment.
+ *
+ * This is useful for:  
+ * - Testing changes to the release process
+ * - Debugging release issues
+ * - Validating environment setup
+ * - Testing contract deployment without publishing
+ */
+
 import { prepare, SemanticContext, SemanticPluginConfig } from './sr-prepare'
 import { verifyConditions } from './sr-verify-conditions'
 import { version } from './sr-version'

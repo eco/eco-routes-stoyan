@@ -1,9 +1,17 @@
 /**
  * @file solidity-version-updater.ts
  *
- * Utilities for updating version information in Solidity files.
+ * Utilities for updating version information in Solidity files and package.json.
  * This functionality is extracted from ProtocolVersion.ts and adapted
  * for use as part of the semantic-release lifecycle.
+ *
+ * Key functions:
+ * - updateSolidityVersions: Recursively finds and updates version() functions in Solidity files
+ * - updatePackageJsonVersion: Updates the version in package.json
+ * - getGitHashShort: Gets the current git commit hash for embedding in versions
+ *
+ * For Solidity files, it looks for the standard pattern function version() external pure returns (string memory)
+ * and updates the implementation to return the new semantic version with git hash.
  */
 
 import * as fs from 'fs'
