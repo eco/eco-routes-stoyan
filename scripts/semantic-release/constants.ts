@@ -109,3 +109,13 @@ export function getDeployedAddressesJsonPath(cwd: string): string {
 export function getBuildDirPath(cwd: string): string {
   return getAbsolutePath(cwd, PATHS.BUILD_DIR)
 }
+
+/**
+ * Get TypeScript build directory path
+ *
+ * @param cwd - Current working directory
+ * @returns Absolute path to TypeScript build directory
+ */
+export function getTsBuildDirPath(cwd: string): string {
+  return getAbsolutePath(cwd, PATHS.TS_BUILD_DIR)
+}
