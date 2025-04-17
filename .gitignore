@@ -73,6 +73,7 @@ out/
 typechain/
 .DS_Store
 tmp/
+dist
 
 # Nishaad's poke script
 executeInstructions.ts
@@ -81,6 +82,7 @@ executeInstructions.ts
 #Publish artifacts
 package
 libTest
+verification-keys.json
 
 # docs
 docs
@@ -104,3 +106,6 @@ output/proofGenerationOutput.json
 .idea/
 
 broadcast/
+
+# Local configs
+CLAUDE.md
