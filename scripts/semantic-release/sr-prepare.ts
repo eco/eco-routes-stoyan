@@ -1,6 +1,5 @@
 import path from 'path'
 import fs from 'fs'
-import { verifyContracts } from './verify-contracts'
 import { buildPackage } from './sr-build-package'
 import { deployRoutesContracts } from './deploy-contracts'
 import dotenv from 'dotenv'
@@ -32,11 +31,14 @@ export interface SemanticContext {
  * Plugin to handle contract deployment during semantic-release process
  * This is the prepare step in the semantic-release lifecycle
  * Will deploy contracts with deterministic addresses by reusing salt for patch versions
- * 
+ *
  * @param pluginConfig - Plugin configuration options
  * @param context - Semantic release context
  */
-export async function prepare(pluginConfig: SemanticPluginConfig, context: SemanticContext): Promise<void> {
+export async function prepare(
+  pluginConfig: SemanticPluginConfig,
+  context: SemanticContext,
+): Promise<void> {
   const { nextRelease, logger, cwd } = context
 
   if (!nextRelease) {
@@ -47,7 +49,9 @@ export async function prepare(pluginConfig: SemanticPluginConfig, context: Seman
   logger.log(`Preparing to deploy contracts for version ${nextRelease.version}`)
 
   // Extract version components
-  const packageJson = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'))
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'),
+  )
   const packageName = packageJson.name
 
   // 1. Build the hardhat files
@@ -69,8 +73,8 @@ export async function prepare(pluginConfig: SemanticPluginConfig, context: Seman
   logger.log(`Package built for version ${nextRelease.version}`)
 }
 
-async function buildHardhat(){
- // Build the hardhat files
- await execPromise('npm run clean')
- await execPromise('env COMPILE_MODE=production npm run build')
+async function buildHardhat() {
+  // Build the hardhat files
+  await execPromise('npm run clean')
+  await execPromise('env COMPILE_MODE=production npm run build')
 }

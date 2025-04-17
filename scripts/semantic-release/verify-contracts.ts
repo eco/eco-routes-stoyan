@@ -2,11 +2,11 @@ import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { SemanticContext } from './sr-prepare'
-import { 
-  PATHS, 
-  ENV_VARS, 
-  THRESHOLDS, 
-  getDeploymentResultsPath 
+import {
+  PATHS,
+  ENV_VARS,
+  THRESHOLDS,
+  getDeploymentResultsPath,
 } from './constants'
 import { Logger } from './helpers'
 
@@ -31,13 +31,21 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     // Try environment variable first
     if (process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS]) {
       try {
-        verificationKeys = JSON.parse(process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS] as string)
-        logger.log(`Found verification keys in ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} environment variable`)
+        verificationKeys = JSON.parse(
+          process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS] as string,
+        )
+        logger.log(
+          `Found verification keys in ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} environment variable`,
+        )
       } catch (e) {
-        logger.warn(`Failed to parse ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} as JSON: ${(e as Error).message}`)
+        logger.warn(
+          `Failed to parse ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} as JSON: ${(e as Error).message}`,
+        )
       }
     }
-    const backupFile = process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS_FILE] || PATHS.VERIFICATION_KEYS_FILE
+    const backupFile =
+      process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS_FILE] ||
+      PATHS.VERIFICATION_KEYS_FILE
     // If environment variable didn't work, try file fallback
     if (Object.keys(verificationKeys).length === 0) {
       try {
@@ -56,40 +64,52 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
 
     // Return if we still don't have verification keys
     if (Object.keys(verificationKeys).length === 0) {
-      logger.error('No valid verification keys found, skipping contract verification')
+      logger.error(
+        'No valid verification keys found, skipping contract verification',
+      )
       return
     }
 
-    logger.log(`Found verification keys for ${Object.keys(verificationKeys).length} chain IDs`)
+    logger.log(
+      `Found verification keys for ${Object.keys(verificationKeys).length} chain IDs`,
+    )
 
     // Set up environment for verification
     const resultsFile = getDeploymentResultsPath(cwd)
 
     // Check if deployment results exist
     if (!fs.existsSync(resultsFile)) {
-      logger.error(`Deployment results file not found at ${resultsFile}, skipping verification`)
+      logger.error(
+        `Deployment results file not found at ${resultsFile}, skipping verification`,
+      )
       return
     }
-    
+
     // Check if the file has content
     const fileContent = fs.readFileSync(resultsFile, 'utf-8')
     if (!fileContent.trim()) {
-      logger.error(`Deployment results file is empty at ${resultsFile}, skipping verification`)
+      logger.error(
+        `Deployment results file is empty at ${resultsFile}, skipping verification`,
+      )
       return
     }
-    
+
     const entryCount = fileContent.split('\n').filter(Boolean).length
-    logger.log(`Found deployment results file with ${entryCount} entries to verify`)
-    
+    logger.log(
+      `Found deployment results file with ${entryCount} entries to verify`,
+    )
+
     // If there are too many entries, provide a warning that verification might take a while
     if (entryCount > THRESHOLDS.VERIFICATION_ENTRIES_WARNING) {
-      logger.warn(`Large number of deployment entries (${entryCount}) might cause verification to take longer than usual`)
+      logger.warn(
+        `Large number of deployment entries (${entryCount}) might cause verification to take longer than usual`,
+      )
     }
 
     // Execute verification
     await executeVerification(logger, cwd, {
       resultsFile,
-      verificationKeys
+      verificationKeys,
     })
 
     logger.log('✅ Contract verification completed')
@@ -106,17 +126,21 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
 async function executeVerification(
   logger: Logger,
   cwd: string,
-  config: { resultsFile: string; verificationKeys: Record<string, string> }
+  config: { resultsFile: string; verificationKeys: Record<string, string> },
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     // Path to the verification script
     const verifyScriptPath = path.join(cwd, PATHS.VERIFICATION_SCRIPT)
 
     if (!fs.existsSync(verifyScriptPath)) {
-      return reject(new Error(`Verification script not found at ${verifyScriptPath}`))
+      return reject(
+        new Error(`Verification script not found at ${verifyScriptPath}`),
+      )
     }
 
-    logger.log(`Running verification for deployment results in ${config.resultsFile}`)
+    logger.log(
+      `Running verification for deployment results in ${config.resultsFile}`,
+    )
 
     // Pass verification keys directly as JSON string
     const verificationKeysJson = JSON.stringify(config.verificationKeys)
@@ -125,11 +149,11 @@ async function executeVerification(
       env: {
         ...process.env,
         [ENV_VARS.RESULTS_FILE]: config.resultsFile,
-        [ENV_VARS.VERIFICATION_KEYS]: verificationKeysJson
+        [ENV_VARS.VERIFICATION_KEYS]: verificationKeysJson,
       },
       stdio: 'inherit',
       shell: true,
-      cwd: cwd
+      cwd,
     })
 
     verifyProcess.on('close', (code) => {
@@ -144,7 +168,9 @@ async function executeVerification(
     })
 
     verifyProcess.on('error', (error) => {
-      logger.error(`Verification process failed to start: ${(error as Error).message}`)
+      logger.error(
+        `Verification process failed to start: ${(error as Error).message}`,
+      )
       reject(error)
     })
   })

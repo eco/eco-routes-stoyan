@@ -1,6 +1,6 @@
 /**
  * @file sr-publish.ts
- * 
+ *
  * Handles publishing the built package to npm as part of the semantic-release process
  */
 
@@ -19,9 +19,12 @@ const execPromise = promisify(exec)
  * @param context The semantic release context
  * @returns Object containing package name and URL
  */
-export async function publish(pluginConfig: any, context: SemanticContext): Promise<any> {
+export async function publish(
+  pluginConfig: any,
+  context: SemanticContext,
+): Promise<any> {
   const { nextRelease, logger, cwd } = context
-  if(!shouldWePublish(nextRelease?.version || '')) {
+  if (!shouldWePublish(nextRelease?.version || '')) {
     return
   }
 
@@ -30,7 +33,9 @@ export async function publish(pluginConfig: any, context: SemanticContext): Prom
     // Use 'latest' for stable releases, 'beta' for prerelease versions
     const tag = nextRelease?.type === 'prerelease' ? 'beta' : 'latest'
 
-    logger.log(`Publishing package version ${nextRelease?.version} with tag ${tag}`)
+    logger.log(
+      `Publishing package version ${nextRelease?.version} with tag ${tag}`,
+    )
 
     // Use the build directory
     const buildDir = path.join(cwd, 'build')
@@ -38,7 +43,9 @@ export async function publish(pluginConfig: any, context: SemanticContext): Prom
     // Ensure the dist directory exists after compilation
     const distDirPath = path.join(buildDir, 'dist')
     if (!fs.existsSync(distDirPath)) {
-      throw new Error(`Compilation failed: dist directory not found at ${distDirPath}`)
+      throw new Error(
+        `Compilation failed: dist directory not found at ${distDirPath}`,
+      )
     }
 
     // Publish the package with the appropriate tag
@@ -56,11 +63,13 @@ export async function publish(pluginConfig: any, context: SemanticContext): Prom
       logger.error(stderr)
     }
 
-    logger.log(`✅ Package ${nextRelease?.version} published successfully with tag ${tag}`)
+    logger.log(
+      `✅ Package ${nextRelease?.version} published successfully with tag ${tag}`,
+    )
 
     return {
       name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
-      url: `https://www.npmjs.com/package/${PACKAGE.ROUTES_TS_PACKAGE_NAME}`
+      url: `https://www.npmjs.com/package/${PACKAGE.ROUTES_TS_PACKAGE_NAME}`,
     }
   } catch (error) {
     logger.error('❌ Package publish failed')
@@ -78,12 +87,18 @@ function shouldWePublish(version: string): boolean {
   const shouldPublish = isGitHubCI || notDryRun
 
   if (!shouldPublish) {
-    console.log('DRY RUN: Skipping actual npm publish. Would have published package to npm.')
+    console.log(
+      'DRY RUN: Skipping actual npm publish. Would have published package to npm.',
+    )
     console.log(`Would publish: ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version}`)
-    console.log(`Not publishing, Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`)
+    console.log(
+      `Not publishing, Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`,
+    )
     return false
   } else {
-    console.log(`Publishing ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} to npm...`)
+    console.log(
+      `Publishing ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} to npm...`,
+    )
     return true
   }
 }

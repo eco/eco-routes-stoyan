@@ -1,12 +1,7 @@
-import {
-  prepare,
-  SemanticContext,
-  SemanticPluginConfig
-} from './sr-prepare'
+import { prepare, SemanticContext, SemanticPluginConfig } from './sr-prepare'
 import { verifyConditions } from './sr-verify-conditions'
 import { version } from './sr-version'
 import { publish } from './sr-publish'
-import { ENV_VARS, PACKAGE } from './constants'
 
 async function main() {
   // Create plugin config and context
@@ -16,9 +11,9 @@ async function main() {
     logger: {
       log: console.log,
       error: console.error,
-      warn: console.warn
+      warn: console.warn,
     },
-    cwd: process.cwd()
+    cwd: process.cwd(),
   }
 
   // Simulate the semantic-release lifecycle
@@ -40,9 +35,9 @@ async function main() {
 
     // 5. Publish the package
     const result = await publish(pluginConfig, context)
-    
 
     console.log('\n✅ Semantic release simulation completed successfully')
+    return result
   } catch (error) {
     console.error('\n❌ Semantic release simulation failed:')
     console.error((error as Error).message)

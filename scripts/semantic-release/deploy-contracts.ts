@@ -1,12 +1,12 @@
 /**
  * @file deploy-contracts.ts
- * 
- * This file is responsible for deploying smart contracts using deterministic 
+ *
+ * This file is responsible for deploying smart contracts using deterministic
  * deployment (CREATE3) with specific salts derived from the package version.
- * 
+ *
  * It supports deploying to multiple environments (production and pre-production)
  * with different salts but in the same deployment process.
- * 
+ *
  * The deployment process:
  * 1. Computes salt values based on semantic version
  * 2. Creates a single results file for all deployments
@@ -22,11 +22,11 @@ import { parse as parseCSV } from 'csv-parse/sync'
 import { determineSalts } from '../utils/extract-salt'
 import { getAddress } from 'viem'
 import { SemanticContext } from './sr-prepare'
-import { 
-  PATHS, 
-  ENV_VARS, 
-  getDeploymentResultsPath, 
-  getDeployedAddressesJsonPath 
+import {
+  PATHS,
+  ENV_VARS,
+  getDeploymentResultsPath,
+  getDeployedAddressesJsonPath,
 } from './constants'
 import dotenv from 'dotenv'
 import { Logger } from './helpers'
@@ -44,7 +44,7 @@ interface DeploymentRecord {
   chainId: string
   address: string
   contractPath: string
-  [key: string]: string  // Allow additional properties
+  [key: string]: string // Allow additional properties
 }
 
 interface DeploymentResult {
@@ -52,23 +52,26 @@ interface DeploymentResult {
   success: boolean
 }
 
-export async function deployRoutesContracts(context: SemanticContext, packageName: string): Promise<void> {
+export async function deployRoutesContracts(
+  context: SemanticContext,
+  packageName: string,
+): Promise<void> {
   const { nextRelease, logger, cwd } = context
   try {
     // Determine salts based on version
     const { rootSalt, preprodRootSalt } = await determineSalts(
       nextRelease!.version,
-      logger
+      logger,
     )
 
     // Set up environment for deployment
     await deployToEnv(
       [
         { salt: rootSalt, environment: 'production' },
-        { salt: preprodRootSalt, environment: 'preprod' }
+        { salt: preprodRootSalt, environment: 'preprod' },
       ],
       logger,
-      cwd
+      cwd,
     )
 
     logger.log('✅ Contract deployment completed successfully')
@@ -85,7 +88,7 @@ export async function deployRoutesContracts(context: SemanticContext, packageNam
 async function deployToEnv(
   configs: { salt: string; environment: string }[],
   logger: Logger,
-  cwd: string
+  cwd: string,
 ): Promise<void> {
   // Check for required environment variables
   const requiredEnvVars = [ENV_VARS.PRIVATE_KEY, ENV_VARS.ALCHEMY_API_KEY]
@@ -129,9 +132,9 @@ async function deployToEnv(
     }
 
     // Add environment info to contracts
-    const contractsWithEnv = result.contracts.map(contract => ({
+    const contractsWithEnv = result.contracts.map((contract) => ({
       ...contract,
-      environment: config.environment
+      environment: config.environment,
     }))
 
     allContracts = [...allContracts, ...contractsWithEnv]
@@ -139,7 +142,10 @@ async function deployToEnv(
 
   // Save all contracts to JSON
   const contractsJson = processContractsForJson(allContracts)
-  fs.writeFileSync(deployedContractFilePath, JSON.stringify(contractsJson, null, 2))
+  fs.writeFileSync(
+    deployedContractFilePath,
+    JSON.stringify(contractsJson, null, 2),
+  )
 
   logger.log(`Contract addresses saved to ${deployedContractFilePath}`)
 }
@@ -147,7 +153,9 @@ async function deployToEnv(
 /**
  * Process contracts array into the required JSON format
  */
-function processContractsForJson(contracts: Contract[]): Record<string, Record<string, string>> {
+function processContractsForJson(
+  contracts: Contract[],
+): Record<string, Record<string, string>> {
   // Group by chain ID and environment
   const groupedContracts: Record<string, Contract[]> = {}
 
@@ -162,8 +170,8 @@ function processContractsForJson(contracts: Contract[]): Record<string, Record<s
   // Convert to desired format
   return Object.fromEntries(
     Object.entries(groupedContracts).map(([key, contracts]) => {
-      const names = contracts.map(c => c.name)
-      const addresses = contracts.map(c => c.address)
+      const names = contracts.map((c) => c.name)
+      const addresses = contracts.map((c) => c.address)
 
       const contractMap: Record<string, string> = {}
       for (let i = 0; i < names.length; i++) {
@@ -171,7 +179,7 @@ function processContractsForJson(contracts: Contract[]): Record<string, Record<s
       }
 
       return [key, contractMap]
-    })
+    }),
   )
 }
 
@@ -182,7 +190,7 @@ async function deployContracts(
   salt: string,
   logger: Logger,
   cwd: string,
-  resultsFile: string
+  resultsFile: string,
 ): Promise<DeploymentResult> {
   return new Promise((resolve, reject) => {
     // Path to the deployment script
@@ -190,7 +198,9 @@ async function deployContracts(
     const outputDir = path.join(cwd, PATHS.OUTPUT_DIR)
 
     if (!fs.existsSync(deployScriptPath)) {
-      return reject(new Error(`Deployment script not found at ${deployScriptPath}`))
+      return reject(
+        new Error(`Deployment script not found at ${deployScriptPath}`),
+      )
     }
 
     logger.log(`Running deployment with salt: ${salt}`)
@@ -203,11 +213,11 @@ async function deployContracts(
         ...process.env,
         [ENV_VARS.SALT]: salt,
         [ENV_VARS.RESULTS_FILE]: resultsFile,
-        [ENV_VARS.APPEND_RESULTS]: "true" // Add a flag to indicate we want to append results
+        [ENV_VARS.APPEND_RESULTS]: 'true', // Add a flag to indicate we want to append results
       },
       stdio: 'inherit',
       shell: true,
-      cwd: cwd
+      cwd,
     })
 
     deployProcess.on('close', (code) => {
@@ -235,7 +245,7 @@ async function deployContracts(
 
 /**
  * Parse all deployment results from the results file using CSV library
- * 
+ *
  * @param filePath - Path to the CSV file containing deployment results
  * @param logger - Logger instance for output messages
  * @returns Array of Contract objects parsed from the file
@@ -261,8 +271,8 @@ function parseDeploymentResults(filePath: string, logger?: Logger): Contract[] {
       skip_empty_lines: true,
       trim: true,
       relax_column_count: true, // Handle rows with missing fields
-      from_line: 1,             // Start from the first line
-      delimiter: ',',           // Specify delimiter explicitly
+      from_line: 1, // Start from the first line
+      delimiter: ',', // Specify delimiter explicitly
       // Handle any comment lines in the file
       comment: '#',
       // Specify type casting
@@ -272,7 +282,7 @@ function parseDeploymentResults(filePath: string, logger?: Logger): Contract[] {
           return isNaN(parsedValue) ? value : parsedValue
         }
         return value
-      }
+      },
     }
 
     // Parse CSV content
@@ -281,17 +291,22 @@ function parseDeploymentResults(filePath: string, logger?: Logger): Contract[] {
 
     // Process each record to extract contract name
     return records
-      .filter(record => {
-        const isValid = record.chainId && record.address && record.contractPath &&
+      .filter((record) => {
+        const isValid =
+          record.chainId &&
+          record.address &&
+          record.contractPath &&
           record.contractPath.includes(':')
 
         if (!isValid && logger) {
-          logger.log(`Skipping invalid deployment record: ${JSON.stringify(record)}`)
+          logger.log(
+            `Skipping invalid deployment record: ${JSON.stringify(record)}`,
+          )
         }
 
         return isValid
       })
-      .map(record => {
+      .map((record) => {
         // Extract contract name from the path
         const [, contractName] = record.contractPath.split(':')
 
@@ -299,17 +314,22 @@ function parseDeploymentResults(filePath: string, logger?: Logger): Contract[] {
           address: record.address,
           name: contractName,
           // Ensure chainId is a number
-          chainId: typeof record.chainId === 'number'
-            ? record.chainId
-            : parseInt(record.chainId, 10)
+          chainId:
+            typeof record.chainId === 'number'
+              ? record.chainId
+              : parseInt(record.chainId, 10),
         }
       })
   } catch (error) {
     // Log error but don't crash the process
     if (logger) {
-      logger.error(`Error parsing deployment results from ${filePath}: ${(error as Error).message}`)
+      logger.error(
+        `Error parsing deployment results from ${filePath}: ${(error as Error).message}`,
+      )
     } else {
-      console.error(`Error parsing deployment results: ${(error as Error).message}`)
+      console.error(
+        `Error parsing deployment results: ${(error as Error).message}`,
+      )
     }
     return []
   }

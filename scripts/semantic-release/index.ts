@@ -1,9 +1,9 @@
 /**
  * @file index.ts
- * 
+ *
  * Main entry point for the eco-routes semantic-release plugin.
  * Exports all lifecycle hooks that this plugin implements.
- * 
+ *
  * Lifecycle order:
  * 1. verifyConditions - validate environment and versions
  * 2. analyzeCommits - determine next version (built-in to semantic-release)
@@ -32,8 +32,8 @@ export default {
   prepare,
 
   // Publish step: publish the built package to npm
-  publish
+  publish,
 
-   // Additional hooks can be added later:
-   // success, fail, etc.
+  // Additional hooks can be added later:
+  // success, fail, etc.
 }

@@ -21,7 +21,7 @@ export const PATHS = {
   // Package related
   PACKAGE_JSON: 'package.json',
   README_FILE: 'README.md',
-  LICENSE_FILE: 'LICENSE'
+  LICENSE_FILE: 'LICENSE',
 }
 
 /**
@@ -34,7 +34,7 @@ export const ENV_VARS = {
   SALT: 'SALT',
   APPEND_RESULTS: 'APPEND_RESULTS',
   RESULTS_FILE: 'RESULTS_FILE',
-  
+
   // NPM related
   NPM_TOKEN: 'NPM_TOKEN',
   NOT_DRY_RUN: 'NOT_DRY_RUN',
@@ -44,8 +44,6 @@ export const ENV_VARS = {
   CONTRACT_VERIFICATION_KEYS: 'CONTRACT_VERIFICATION_KEYS',
   CONTRACT_VERIFICATION_KEYS_FILE: 'CONTRACT_VERIFICATION_KEYS_FILE',
   VERIFICATION_KEYS: 'VERIFICATION_KEYS',
-
-
 }
 
 /**
@@ -53,7 +51,7 @@ export const ENV_VARS = {
  */
 export const PACKAGE = {
   ROUTES_PACKAGE_NAME: '@eco-foundation/eco-routes',
-  ROUTES_TS_PACKAGE_NAME: '@eco-foundation/eco-routes-ts'
+  ROUTES_TS_PACKAGE_NAME: '@eco-foundation/eco-routes-ts',
 }
 
 /**
@@ -66,7 +64,7 @@ export const THRESHOLDS = {
 
 /**
  * Get absolute path based on current working directory
- * 
+ *
  * @param cwd - Current working directory
  * @param relativePath - Relative path to resolve
  * @returns Absolute path
@@ -77,17 +75,20 @@ export function getAbsolutePath(cwd: string, relativePath: string): string {
 
 /**
  * Get deployment results file path
- * 
+ *
  * @param cwd - Current working directory
  * @returns Absolute path to deployment results file
  */
 export function getDeploymentResultsPath(cwd: string): string {
-  return getAbsolutePath(cwd, path.join(PATHS.OUTPUT_DIR, PATHS.DEPLOYMENT_RESULTS_FILE))
+  return getAbsolutePath(
+    cwd,
+    path.join(PATHS.OUTPUT_DIR, PATHS.DEPLOYMENT_RESULTS_FILE),
+  )
 }
 
 /**
  * Get deployed addresses JSON file path
- * 
+ *
  * @param cwd - Current working directory
  * @returns Absolute path to deployed addresses JSON file
  */
@@ -97,7 +98,7 @@ export function getDeployedAddressesJsonPath(cwd: string): string {
 
 /**
  * Get build directory path
- * 
+ *
  * @param cwd - Current working directory
  * @returns Absolute path to build directory
  */
