@@ -1,6 +1,6 @@
 {
   "name": "@eco-foundation/stoyan-routes",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "The Eco Routes Protocol is a decentralized intent based system that allows users to submit their intent to the network and have it fulfilled by a solver on the destination rollup of their choise.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -51,7 +51,7 @@
     "prepack": "rimraf build && rimraf buildTs && yarn run versionPackage && bash scripts/publish/prepack.sh",
     "deployCI": "npx tsx scripts/deploy/deployCI.ts",
     "deployForgeCI": "npx tsx scripts/deploy/deployForgeCI.ts",
-    "cc": "npx tsx scripts/semantic-release/eco-routes-local.ts",
+    "semantic:pub": "npx tsx scripts/semantic-release/eco-routes-local.ts",
     "pub:clean": "rimraf build/dist",
     "pub:build": "cd build && tsc",
     "pub:prepack": "yarn pub:clean && yarn pub:build",

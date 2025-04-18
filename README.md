@@ -159,6 +159,8 @@ $ yarn coverage
 
 Deploy using `deploy.ts` in the `scripts` directory. This script draws from the configs (found in the `config` directory) as well as a local .env file. See `.env.example`.
 
+For automated deployments and package publishing, we use semantic-release. Detailed documentation on the semantic-release process is available in the [semantic-release README](./scripts/semantic-release/README.md).
+
 ### End-To-End Testing
 
 This section is under development. While the tests are not yet operational, the scripts are available in the `scripts` directory

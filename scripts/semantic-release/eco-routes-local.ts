@@ -21,7 +21,7 @@ async function main() {
   // Create plugin config and context
   const pluginConfig: SemanticPluginConfig = {}
   const context: SemanticContext = {
-    nextRelease: { version: '0.0.4', gitTag: 'v0.0.4', notes: 'Test release', type: 'patch' },
+    nextRelease: { version: '0.0.5', gitTag: 'v0.0.5', notes: 'Test release', type: 'patch' },
     logger: {
       log: console.log,
       error: console.error,

@@ -22,7 +22,9 @@ import fs from 'fs'
 import { SemanticContext } from './sr-prepare'
 import { ENV_VARS, getBuildDirPath, PACKAGE } from './constants'
 import { setPublishingPackage } from './sr-build-package'
+import dotenv from 'dotenv'
 
+dotenv.config()
 const execPromise = promisify(exec)
 
 /**
@@ -62,7 +64,9 @@ export async function publish(
           `Compilation failed: dist directory not found at ${distDirPath}`,
         )
       }
-      if(!dryRun){
+      
+      if (!dryRun) {
+        // Actual publishing in non-dry-run mode
         const result = await execPromise(`yarn publish --tag ${tag}`, {
           cwd: getBuildDirPath(cwd),
           env: {
@@ -71,7 +75,8 @@ export async function publish(
         })
         logger.log(result.stdout)
         logger.log(`Package ${packageName}@${version} published successfully`)
-      }else{
+      } else {
+        // Just log in dry-run mode
         logger.log(`DRY RUN: Not really publishing: ${packageName}@${version}`)
         logger.log(`Package ${packageName}@${version} would be published successfully`)
       }

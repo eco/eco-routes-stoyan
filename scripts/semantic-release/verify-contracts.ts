@@ -44,7 +44,8 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     // Get verification keys from environment variable or file
     let verificationKeys: Record<string, string> = {}
 
-    // Try environment variable first
+    // Try environment variable first, this should be local in development
+    // In the CI/CD pipeline, it will be loaded from the AWS secret manager
     if (process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS]) {
       try {
         verificationKeys = JSON.parse(

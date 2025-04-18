@@ -369,25 +369,10 @@ export function getContractAddress<T extends EcoChainIds>(
  * @returns Array of file paths relative to the provided directory
  */
 function listFilesRecursively(dir: string): string[] {
-  const files: string[] = []
-
-  function traverseDir(currentDir: string, relativePath: string = '') {
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true })
-
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name)
-      const relativeFull = path.join(relativePath, entry.name)
-
-      if (entry.isDirectory()) {
-        traverseDir(fullPath, relativeFull)
-      } else {
-        files.push(relativeFull)
-      }
-    }
-  }
-
-  traverseDir(dir)
-  return files
+  // Import listFilesRecursively from helpers to avoid code duplication
+  // Instead of importing directly at the top to avoid circular dependencies
+  const helpers = require('./helpers');
+  return helpers.listFilesRecursively(dir);
 }
 
 

@@ -34,6 +34,7 @@ import {
   ENV_VARS,
   getDeploymentResultsPath,
   getDeployedAddressesJsonPath,
+  getBuildDirPath,
 } from './constants'
 import dotenv from 'dotenv'
 import { Logger } from './helpers'
@@ -65,6 +66,14 @@ export async function deployRoutesContracts(
 ): Promise<void> {
   const { nextRelease, logger, cwd } = context
   try {
+    // Clean up existing build directory if it exists
+    const buildDir = getBuildDirPath(cwd);
+    if (fs.existsSync(buildDir)) {
+      logger.log(`Deleting existing build directory: ${buildDir}`);
+      fs.rmSync(buildDir, { recursive: true, force: true });
+      logger.log('Build directory deleted successfully');
+    }
+
     // Determine salts based on version
     const { rootSalt, preprodRootSalt } = await determineSalts(
       nextRelease!.version,

@@ -87,8 +87,9 @@ describe('Prepare function', () => {
     expect(deployModule.deployRoutesContracts).toHaveBeenCalledTimes(1)
     expect(deployModule.deployRoutesContracts).toHaveBeenCalledWith(context, testPackageName)
 
-    // Assert: Verify verifyContracts was NOT called (it's commented out in the code)
-    expect(verifyModule.verifyContracts).not.toHaveBeenCalled()
+    // Assert: Verify verifyContracts was called
+    expect(verifyModule.verifyContracts).toHaveBeenCalledTimes(1)
+    expect(verifyModule.verifyContracts).toHaveBeenCalledWith(context)
 
     // Assert: Verify buildPackage was called
     expect(buildPackageModule.buildPackage).toHaveBeenCalledTimes(1)
