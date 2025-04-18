@@ -90,7 +90,7 @@ export async function publish(
  * @param version - The version being published
  * @returns Boolean indicating whether to publish packages
  */
-function shouldWePublish(version: string): boolean {
+export function shouldWePublish(version: string): boolean {
   // Check if running in GitHub Actions or local CI mode
   const isCI = process.env[ENV_VARS.CI] === 'true'
   const notDryRun = process.env[ENV_VARS.NOT_DRY_RUN] === 'true'
