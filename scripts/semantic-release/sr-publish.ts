@@ -62,45 +62,20 @@ export async function publish(
           `Compilation failed: dist directory not found at ${distDirPath}`,
         )
       }
-
-      // Create .npmrc file with auth token
-      const npmToken = process.env[ENV_VARS.NPM_TOKEN]
-      if (!dryRun) {
-        if (npmToken) {
-          const npmrcPath = path.join(buildDir, '.npmrc')
-          fs.writeFileSync(npmrcPath, `//registry.npmjs.org/:_authToken=${npmToken}\n`)
-          logger.log('Created .npmrc file with authentication token')
-        } else {
-          logger.log('Warning: No NPM_TOKEN environment variable found')
-        }
+      if(!dryRun){
+        const result = await execPromise(`yarn publish --tag ${tag}`, {
+          cwd: getBuildDirPath(cwd),
+          env: {
+            ...process.env
+          }
+        })
+        logger.log(result.stdout)
+        logger.log(`Package ${packageName}@${version} published successfully`)
+      }else{
+        logger.log(`DRY RUN: Not really publishing: ${packageName}@${version}`)
+        logger.log(`Package ${packageName}@${version} would be published successfully`)
       }
 
-      // Publish the package to npm
-      // const result = await execPromise(`npm publish --tag ${tag} ${dryRun ? '--dry-run' : ''}`, {
-      //   cwd: getBuildDirPath(cwd),
-      //   env: {
-      //     ...process.env,},
-      //   shell: 'true',
-      // })
-      const pathD = getBuildDirPath(cwd)
-      await execPromise('npm publish', {
-        cwd: pathD,
-        env: {
-          ...process.env,
-        },
-        shell: 'true',
-      })
-
-      // logger.log(result.stdout)
-
-      // Clean up .npmrc file for security
-      if (!dryRun && npmToken) {
-        const npmrcPath = path.join(buildDir, '.npmrc')
-        if (fs.existsSync(npmrcPath)) {
-          fs.unlinkSync(npmrcPath)
-          logger.log('Removed .npmrc file for security')
-        }
-      }
     }
   } catch (error) {
     logger.error('❌ Package publish failed')
