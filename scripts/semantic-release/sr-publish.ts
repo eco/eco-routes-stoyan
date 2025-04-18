@@ -20,67 +20,87 @@ import { promisify } from 'util'
 import path from 'path'
 import fs from 'fs'
 import { SemanticContext } from './sr-prepare'
-import { ENV_VARS, PACKAGE } from './constants'
+import { ENV_VARS, getBuildDirPath, PACKAGE } from './constants'
+import { setPublishingPackage } from './sr-build-package'
 
 const execPromise = promisify(exec)
 
 /**
- * Publishes the built package to npm
+ * Publishes both packages to npm (the main package with Solidity files and the TypeScript-only package)
  * @param pluginConfig Plugin configuration
  * @param context The semantic release context
- * @returns Object containing package name and URL
+ * @returns Object containing package names and URLs
  */
 export async function publish(
   pluginConfig: any,
   context: SemanticContext,
 ): Promise<any> {
   const { nextRelease, logger, cwd } = context
-  if (!shouldWePublish(nextRelease?.version || '')) {
-    return
+  const dryRun = !shouldWePublish(nextRelease?.version || '')
+  if (dryRun) {
+    logger.log(`DRY RUN: Skipping actual npm publish. Would have published packages to npm.`)
   }
 
   try {
     // Determine the tag to use for publishing
     // Use 'latest' for stable releases, 'beta' for prerelease versions
     const tag = nextRelease?.type === 'prerelease' ? 'beta' : 'latest'
+    const version = nextRelease?.version || ''
 
-    logger.log(
-      `Publishing package version ${nextRelease?.version} with tag ${tag}`,
-    )
+    logger.log(`Publishing packages version ${version} with tag ${tag}`)
 
-    // Use the build directory
-    const buildDir = path.join(cwd, 'build')
+    // Get directory paths
+    const buildDir = getBuildDirPath(cwd)
 
-    // Ensure the dist directory exists after compilation
-    const distDirPath = path.join(buildDir, 'dist')
-    if (!fs.existsSync(distDirPath)) {
-      throw new Error(
-        `Compilation failed: dist directory not found at ${distDirPath}`,
-      )
-    }
+    for (const packageName of [PACKAGE.ROUTES_PACKAGE_NAME, PACKAGE.ROUTES_TS_PACKAGE_NAME]) {
+      logger.log(`Publishing package: ${packageName}@${version}`)
+      setPublishingPackage(context, packageName)
+      // Ensure the dist directory exists after compilation
+      const distDirPath = path.join(buildDir, 'dist')
+      if (!fs.existsSync(distDirPath)) {
+        throw new Error(
+          `Compilation failed: dist directory not found at ${distDirPath}`,
+        )
+      }
 
-    // Publish the package with the appropriate tag
-    // Note: Make sure NPM_TOKEN environment variable is set for authentication
-    const publishCommand = `cd ${buildDir} && npm publish --tag ${tag} --access public`
-    logger.log(`Executing: ${publishCommand}`)
+      // Create .npmrc file with auth token
+      const npmToken = process.env[ENV_VARS.NPM_TOKEN]
+      if (!dryRun) {
+        if (npmToken) {
+          const npmrcPath = path.join(buildDir, '.npmrc')
+          fs.writeFileSync(npmrcPath, `//registry.npmjs.org/:_authToken=${npmToken}\n`)
+          logger.log('Created .npmrc file with authentication token')
+        } else {
+          logger.log('Warning: No NPM_TOKEN environment variable found')
+        }
+      }
 
-    const { stdout, stderr } = await execPromise(publishCommand)
+      // Publish the package to npm
+      // const result = await execPromise(`npm publish --tag ${tag} ${dryRun ? '--dry-run' : ''}`, {
+      //   cwd: getBuildDirPath(cwd),
+      //   env: {
+      //     ...process.env,},
+      //   shell: 'true',
+      // })
+      const pathD = getBuildDirPath(cwd)
+      await execPromise('npm publish', {
+        cwd: pathD,
+        env: {
+          ...process.env,
+        },
+        shell: 'true',
+      })
 
-    if (stdout) {
-      logger.log(stdout)
-    }
+      // logger.log(result.stdout)
 
-    if (stderr) {
-      logger.error(stderr)
-    }
-
-    logger.log(
-      `✅ Package ${nextRelease?.version} published successfully with tag ${tag}`,
-    )
-
-    return {
-      name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
-      url: `https://www.npmjs.com/package/${PACKAGE.ROUTES_TS_PACKAGE_NAME}`,
+      // Clean up .npmrc file for security
+      if (!dryRun && npmToken) {
+        const npmrcPath = path.join(buildDir, '.npmrc')
+        if (fs.existsSync(npmrcPath)) {
+          fs.unlinkSync(npmrcPath)
+          logger.log('Removed .npmrc file for security')
+        }
+      }
     }
   } catch (error) {
     logger.error('❌ Package publish failed')
@@ -89,27 +109,29 @@ export async function publish(
   }
 }
 
+/**
+ * Determines whether packages should be published based on environment variables
+ * 
+ * @param version - The version being published
+ * @returns Boolean indicating whether to publish packages
+ */
 function shouldWePublish(version: string): boolean {
-  // Check if running in GitHub Actions
-  const isGitHubCI = process.env[ENV_VARS.CI] === 'true'
+  // Check if running in GitHub Actions or local CI mode
+  const isCI = process.env[ENV_VARS.CI] === 'true'
   const notDryRun = process.env[ENV_VARS.NOT_DRY_RUN] === 'true'
 
-  // Only publish if running in CI and it's not a PR
-  const shouldPublish = isGitHubCI || notDryRun
+  // For local testing, allow forcing publish with NOT_DRY_RUN
+  const shouldPublish = isCI || notDryRun
 
   if (!shouldPublish) {
     console.log(
-      'DRY RUN: Skipping actual npm publish. Would have published package to npm.',
+      'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
     )
+    console.log(`Would publish: ${PACKAGE.ROUTES_PACKAGE_NAME}@${version}`)
     console.log(`Would publish: ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version}`)
     console.log(
-      `Not publishing, Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`,
+      `Not publishing. Set ${ENV_VARS.NOT_DRY_RUN} to true to publish or run in a CI environment with ${ENV_VARS.CI} set to true.`,
     )
-    return false
-  } else {
-    console.log(
-      `Publishing ${PACKAGE.ROUTES_TS_PACKAGE_NAME}@${version} to npm...`,
-    )
-    return true
   }
+  return shouldPublish
 }

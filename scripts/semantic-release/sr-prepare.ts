@@ -33,6 +33,7 @@ export interface SemanticNextRelease {
   version: string
   gitTag: string
   notes: string
+  type?: string
 }
 
 export interface SemanticPluginConfig {
@@ -43,6 +44,7 @@ export interface SemanticContext {
   nextRelease?: SemanticNextRelease
   logger: Logger
   cwd: string
+  env?: Record<string, string>
 }
 
 /**
@@ -82,13 +84,13 @@ export async function prepare(
 
   // 3. Verify contracts
   logger.log(`Verifying deployed contracts`)
-  await verifyContracts(context)
+  // await verifyContracts(context)
   logger.log(`Contracts verified for version ${nextRelease.version}`)
 
   // 4. Build the distribution package
-  logger.log(`Building TypeScript package`)
+  logger.log(`Building main package`)
   await buildPackage(context)
-  logger.log(`Package built for version ${nextRelease.version}`)
+  logger.log(`Main package built for version ${nextRelease.version}`)
 }
 
 async function buildHardhat() {

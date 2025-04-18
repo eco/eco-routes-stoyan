@@ -216,9 +216,9 @@ export function getTypeScriptPackageName(baseName: string): string {
 
 /**
  * Reads the package.json file from the current working directory
- * @param cwd - Current working directory
+ * @param directoryPath - Current working directory
  * @returns
  */
-export function getPackageInfo(cwd: string): Record<string, any> {
-  return JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8'))
+export function getPackageInfo(directoryPath: string): Record<string, any> {
+  return JSON.parse(fs.readFileSync(path.join(directoryPath, 'package.json'), 'utf-8'))
 }

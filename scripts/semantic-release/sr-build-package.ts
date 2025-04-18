@@ -23,7 +23,7 @@ import { stringify as stringifyCSV } from 'csv-stringify/sync'
 import { SemanticContext } from './sr-prepare'
 import semverUtils from 'semver-utils'
 import { getPackageInfo, Logger } from './helpers'
-import { PACKAGE } from './constants'
+import { getBuildDirPath, PACKAGE } from './constants'
 import { getGitHashShort } from './solidity-version-updater'
 
 // Define the contract types that form our chain configuration
@@ -151,7 +151,7 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
     generateIndexFile(deployedAddresses, buildDir, version, logger)
 
     // Copy other necessary files
-    copyOtherPackageFiles(buildDir, cwd, version, logger)
+    copyOtherPackageFiles(buildDir, context)
 
     // Create tsconfig.json for TypeScript compilation
     createTsConfig(buildDir, logger)
@@ -390,25 +390,19 @@ function listFilesRecursively(dir: string): string[] {
   return files
 }
 
-/**
- * Copies essential files to the build directory and creates package.json
- * Sets up the npm package metadata with proper dependencies, files to include,
- * and other required package.json fields. Also copies documentation files
- * like README.md and LICENSE to the package.
- * 
- * @param buildDir Directory to copy files to
- * @param cwd Current working directory for source file paths
- * @param version Package version to use in package.json
- * @param logger The logger instance for output messages
- */
+
 function copyOtherPackageFiles(
   buildDir: string,
-  cwd: string,
-  version: string,
-  logger: Logger,
+  context: SemanticContext
 ): void {
+  const { nextRelease, logger, cwd } = context
+
   // Copy common files like README, LICENSE, etc.
   const filesToCopy = [
+    {
+      source: path.join(cwd, 'package.json'),
+      target: path.join(buildDir, 'package.json'),
+    },
     {
       source: path.join(cwd, 'README.md'),
       target: path.join(buildDir, 'README.md'),
@@ -427,40 +421,7 @@ function copyOtherPackageFiles(
   }
 
   // Create package.json for the build
-  const projectPackageJson = getPackageInfo(cwd)
-  const buildPackageJson = {
-    name: PACKAGE.ROUTES_TS_PACKAGE_NAME, // Use the standardized package name
-    version, // Use the version from semantic-release
-    description: projectPackageJson.description,
-    main: 'dist/index.js',
-    types: 'dist/index.d.ts',
-    files: [
-      'dist',
-      'src',
-      'deployAddresses.json',
-      'deployAddresses.csv',
-      '!src/abi',
-      '!src/utils',
-      '!src/index.ts',
-    ],
-    homepage: projectPackageJson.homepage,
-    bugs: projectPackageJson.bugs,
-    repository: projectPackageJson.repository,
-    author: projectPackageJson.author,
-    license: projectPackageJson.license,
-    keywords: projectPackageJson.keywords,
-    publishConfig: projectPackageJson.publishConfig,
-    dependencies: {
-      viem: projectPackageJson.dependencies?.viem || '^2.22.21',
-    },
-  }
-
-  fs.writeFileSync(
-    path.join(buildDir, 'package.json'),
-    JSON.stringify(buildPackageJson, null, 2),
-  )
-
-  logger.log('Created package.json for the build')
+  setPublishingPackage({ logger, cwd, nextRelease }, PACKAGE.ROUTES_PACKAGE_NAME)
 }
 
 /**
@@ -496,4 +457,70 @@ function createTsConfig(buildDir: string, logger: Logger): void {
   )
 
   logger.log('Created tsconfig.json for the build')
+}
+
+
+export async function setPublishingPackage(context: SemanticContext, pubLib: typeof PACKAGE[keyof typeof PACKAGE]): Promise<void> {
+  const { logger, cwd, nextRelease } = context
+
+  if (!nextRelease) {
+    logger.log('No release detected, skipping TypeScript-only package creation')
+    return
+  }
+
+  const buildDir = getBuildDirPath(cwd)
+  // Create a TypeScript-specific package.json by modifying the existing one
+  let projectPackageJson = getPackageInfo(buildDir)
+  const packageJsonPath = path.join(buildDir, 'package.json')
+  if (projectPackageJson) {
+    logger.log(`Updating package.json for ` + pubLib)
+    const defaults = {
+      version: nextRelease.version,
+      description: projectPackageJson.description,
+      main: 'dist/index.js',
+      types: 'dist/index.d.ts',
+    }
+    const diffs = pubLib === PACKAGE.ROUTES_PACKAGE_NAME ? {
+      name: PACKAGE.ROUTES_PACKAGE_NAME,
+      ...defaults,
+      files: [
+        'dist',
+        'src',
+        'deployAddresses.json',
+        'deployAddresses.csv',
+        '!src/abi',
+        '!src/utils',
+        '!src/index.ts',
+      ],
+    }
+      :
+      {
+        name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
+        ...defaults,
+        files: [
+          'dist',
+          'deployAddresses.json',
+          'deployAddresses.csv'
+        ],
+        dependencies: { viem: projectPackageJson.dependencies.viem }
+      }
+
+    // Modify package.json for TypeScript build
+    // Change package name to add -ts suffix
+    projectPackageJson = {
+      ...projectPackageJson,
+      ...diffs,
+    }
+
+    // Remove some unnecessary fields
+    delete projectPackageJson.devDependencies
+    delete projectPackageJson.scripts
+
+    // Write the modified package.json
+    fs.writeFileSync(
+      packageJsonPath,
+      JSON.stringify(projectPackageJson, null, 2)
+    )
+    logger.log('Created package.json for the build')
+  }
 }

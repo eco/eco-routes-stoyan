@@ -21,13 +21,13 @@ async function main() {
   // Create plugin config and context
   const pluginConfig: SemanticPluginConfig = {}
   const context: SemanticContext = {
-    nextRelease: { version: '0.0.3', gitTag: 'v0.0.3', notes: 'Test release' },
+    nextRelease: { version: '0.0.3', gitTag: 'v0.0.3', notes: 'Test release', type: 'patch' },
     logger: {
       log: console.log,
       error: console.error,
       warn: console.warn,
     },
-    cwd: process.cwd(),
+    cwd: process.cwd()
   }
 
   // Simulate the semantic-release lifecycle
@@ -46,8 +46,6 @@ async function main() {
 
     // 4. Finally run publish phase (publish to npm)
     console.log('\n--- Starting publish phase ---')
-
-    // 5. Publish the package
     const result = await publish(pluginConfig, context)
 
     console.log('\n✅ Semantic release simulation completed successfully')

@@ -7,7 +7,6 @@ import path from 'path'
 export const PATHS = {
   // Build related paths
   BUILD_DIR: 'build',
-  TS_BUILD_DIR: 'buildTs',
 
   // Deployment related paths
   OUTPUT_DIR: 'out',
