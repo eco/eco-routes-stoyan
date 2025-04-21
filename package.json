@@ -48,7 +48,6 @@
     "test:ts": "jest",
     "clean": "hardhat clean && yarn pub:clean",
     "versionPackage": "npx tsx scripts/publish/version.ts",
-    "prepack": "rimraf build && rimraf buildTs && yarn run versionPackage && bash scripts/publish/prepack.sh",
     "deployCI": "npx tsx scripts/deploy/deployCI.ts",
     "deployForgeCI": "npx tsx scripts/deploy/deployForgeCI.ts",
     "semantic:pub": "npx tsx scripts/semantic-release/eco-routes-local.ts",
