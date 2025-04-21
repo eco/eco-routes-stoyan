@@ -1,5 +1,5 @@
 {
-  "branches": ["main"],
+  "branches": ["main", "semantic-release"],
   "repositoryUrl": "https://github.com/eco/eco-routes-stoyan.git",
   "plugins": [
     [

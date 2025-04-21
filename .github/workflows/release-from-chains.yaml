@@ -4,7 +4,6 @@ name: Trigger Release from eco-chains
 # 1. Automatically when a tag is pushed to eco-chains repository
 # 2. Manually via the GitHub UI with environment selection
 on:
-  push:
   repository_dispatch:
     types: [eco-chains-tag-pushed]
   workflow_dispatch:
@@ -12,7 +11,7 @@ on:
       environment:
         description: "Environment to deploy to"
         required: true
-        default: "testnet"
+        default: "mainnet"
         type: choice
         options:
           - testnet
