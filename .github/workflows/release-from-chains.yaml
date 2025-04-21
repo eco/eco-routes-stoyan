@@ -99,7 +99,11 @@ jobs:
         with:
           # Build the semantic-release plugin
           cmd: build:semantic-plugin
-
+      - name: Setup npm token
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       # Run semantic-release with access to the AWS secrets
       - name: Run Semantic Release
         env:
