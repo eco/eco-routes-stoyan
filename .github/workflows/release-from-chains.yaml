@@ -94,6 +94,12 @@ jobs:
         uses: borales/actions-yarn@v5
         with:
           cmd: build
+      
+      - name: Build the semantic-release plugin
+        uses: borales/actions-yarn@v5
+        with:
+          # Build the semantic-release plugin
+          cmd: build:semantic-plugin
 
       # Run semantic-release with access to the AWS secrets
       - name: Run Semantic Release

@@ -21,7 +21,7 @@
     ],
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    "scripts/semantic-release/index.ts",
+    "./dist/semantic-release/index.js",
     "@semantic-release/npm",
     [
       "@semantic-release/git",
