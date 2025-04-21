@@ -54,23 +54,17 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
     address public immutable ROUTER;
 
     /**
-     * @notice Address of Inbox contract (same across all chains via ERC-2470)
-     */
-    address public immutable INBOX;
-
-    /**
      * @notice Initializes the MetaProver contract
      * @param _router Address of local Metalayer router
      * @param _inbox Address of Inbox contract
      * @param _provers Array of trusted provers to whitelist
      */
-    constructor(address _router, address _inbox, address[] memory _provers) {
+    constructor(
+        address _router,
+        address _inbox,
+        address[] memory _provers
+    ) MessageBridgeProver(_inbox, _provers) {
         ROUTER = _router;
-        INBOX = _inbox;
-        proverWhitelist[address(this)] = true;
-        for (uint256 i = 0; i < _provers.length; i++) {
-            proverWhitelist[_provers[i]] = true;
-        }
     }
 
     /**
@@ -122,30 +116,32 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
      * @param _sourceChainId Chain ID of source chain
      * @param _intentHashes Array of intent hashes to prove
      * @param _claimants Array of claimant addresses
-     * @param _sourceChainProver Address of prover on source chain
      * @param _data Additional data for message formatting
      */
     function initiateProving(
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) external payable override {
         if (msg.sender != INBOX) {
             revert UnauthorizedInitiateProving(msg.sender);
         }
 
-        bytes memory messageBody = abi.encode(_intentHashes, _claimants);
+        (
+            uint32 domain,
+            bytes32 recipient,
+            bytes memory message
+        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
         emit BatchSent(_intentHashes, _sourceChainId);
 
         // Call Metalayer router's send message function
         IMetalayerRouter(ROUTER).dispatch{value: msg.value}(
-            uint32(_sourceChainId),
-            _sourceChainProver.addressToBytes32(),
+            domain,
+            recipient,
             new ReadOperation[](0),
-            messageBody,
+            message,
             FinalityState.INSTANT,
             200_000
         );
@@ -157,7 +153,6 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
      * @param _sourceChainId Chain ID of source chain
      * @param _intentHashes Array of intent hashes to prove
      * @param _claimants Array of claimant addresses
-     * @param _sourceChainProver Address of prover on source chain
      * @param _data Additional data for message formatting
      * @return Fee amount required for message dispatch
      */
@@ -165,17 +160,16 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) external view override returns (uint256) {
-        bytes memory messageBody = abi.encode(_intentHashes, _claimants);
+        (
+            uint32 domain,
+            bytes32 recipient,
+            bytes memory message
+        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
         return
-            IMetalayerRouter(ROUTER).quoteDispatch(
-                uint32(_sourceChainId),
-                _sourceChainProver.addressToBytes32(),
-                messageBody
-            );
+            IMetalayerRouter(ROUTER).quoteDispatch(domain, recipient, message);
     }
 
     /**
@@ -184,5 +178,20 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
      */
     function getProofType() external pure override returns (string memory) {
         return PROOF_TYPE;
+    }
+
+    function processAndFormat(
+        uint256 _sourceChainId,
+        bytes32[] calldata hashes,
+        address[] calldata claimants,
+        bytes calldata _data
+    )
+        internal
+        pure
+        returns (uint32 domain, bytes32 recipient, bytes memory message)
+    {
+        domain = uint32(_sourceChainId);
+        recipient = abi.decode(_data, (bytes32));
+        message = abi.encode(hashes, claimants);
     }
 }

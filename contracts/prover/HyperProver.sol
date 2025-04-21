@@ -52,23 +52,17 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
     address public immutable MAILBOX;
 
     /**
-     * @notice Address of Inbox contract (same across all chains via ERC-2470)
-     */
-    address public immutable INBOX;
-
-    /**
      * @notice Initializes the HyperProver contract
      * @param _mailbox Address of local Hyperlane mailbox
      * @param _inbox Address of Inbox contract
      * @param _provers Array of trusted provers to whitelist
      */
-    constructor(address _mailbox, address _inbox, address[] memory _provers) {
+    constructor(
+        address _mailbox,
+        address _inbox,
+        address[] memory _provers
+    ) MessageBridgeProver(_inbox, _provers) {
         MAILBOX = _mailbox;
-        INBOX = _inbox;
-        proverWhitelist[address(this)] = true;
-        for (uint256 i = 0; i < _provers.length; i++) {
-            proverWhitelist[_provers[i]] = true;
-        }
     }
 
     /**
@@ -117,7 +111,6 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) external payable override {
         if (msg.sender != INBOX) {
@@ -132,13 +125,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
             bytes memory messageBody,
             bytes memory metadata,
             IPostDispatchHook hook
-        ) = processAndFormat(
-                _sourceChainId,
-                _intentHashes,
-                _claimants,
-                _sourceChainProver,
-                _data
-            );
+        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
         IMailbox(MAILBOX).dispatch{value: msg.value}(
             destinationDomain,
@@ -153,7 +140,6 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) public view override returns (uint256) {
         (
@@ -162,13 +148,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
             bytes memory messageBody,
             bytes memory metadata,
             IPostDispatchHook hook
-        ) = processAndFormat(
-                _sourceChainId,
-                _intentHashes,
-                _claimants,
-                _sourceChainProver,
-                _data
-            );
+        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
         return
             IMailbox(MAILBOX).quoteDispatch(
@@ -192,7 +172,6 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         uint256 _sourceChainId,
         bytes32[] calldata hashes,
         address[] calldata claimants,
-        address _sourceChainProver,
         bytes calldata _data
     )
         internal
@@ -206,13 +185,14 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         )
     {
         domain = uint32(_sourceChainId);
-        recipient = TypeCasts.addressToBytes32(_sourceChainProver);
+        (
+            bytes32 _sourceChainProver,
+            bytes memory metadataDecoded,
+            address hookAddr
+        ) = abi.decode(_data, (bytes32, bytes, address));
+        recipient = _sourceChainProver;
         message = abi.encode(hashes, claimants);
 
-        (bytes memory metadataDecoded, address hookAddr) = abi.decode(
-            _data,
-            (bytes, address)
-        );
         metadata = metadataDecoded;
         hook = (hookAddr == address(0))
             ? IMailbox(MAILBOX).defaultHook()

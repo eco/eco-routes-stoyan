@@ -7,19 +7,17 @@ import {BaseProver} from "./BaseProver.sol";
 abstract contract MessageBridgeProver is BaseProver {
     mapping(address => bool) public proverWhitelist;
 
-    function initiateProving(
-        uint256 _sourceChainId,
-        bytes32[] calldata _intentHashes,
-        address[] calldata _claimants,
-        address _sourceChainProver,
-        bytes calldata _data
-    ) external payable virtual;
+    constructor(address _inbox, address[] memory _provers) BaseProver(_inbox) {
+        proverWhitelist[address(this)] = true;
+        for (uint256 i = 0; i < _provers.length; i++) {
+            proverWhitelist[_provers[i]] = true;
+        }
+    }
 
     function fetchFee(
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) external view virtual returns (uint256);
 }
