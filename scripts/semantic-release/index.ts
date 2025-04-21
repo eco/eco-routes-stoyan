@@ -22,8 +22,12 @@ import { verifyConditions } from './sr-verify-conditions'
 import { version } from './sr-version'
 import { publish } from './sr-publish'
 
-// Export functions for each semantic-release lifecycle hook
-export default {
+// Export functions for each semantic-release lifecycle hook using CommonJS format
+// This format is required for semantic-release to properly load the plugin
+module.exports = {
+  // Plugin name helps with debugging and logging
+  name: 'eco-routes-semantic-release-plugin',
+  
   // First step: verify all conditions are met for a release
   verifyConditions,
 
