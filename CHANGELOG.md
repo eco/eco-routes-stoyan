@@ -1,3 +1,11 @@
+## [1.1.1](https://github.com/eco/eco-routes-stoyan/compare/v1.1.0...v1.1.1) (2025-04-21)
+
+
+### Bug Fixes
+
+* add alchemy and pk to gh action ([d84a694](https://github.com/eco/eco-routes-stoyan/commit/d84a694ad770d57e5bcad6ca2dc9b01b1fab39b8))
+* add name ([bdb64e0](https://github.com/eco/eco-routes-stoyan/commit/bdb64e0f3a45558810498edef9feb5a14d058a64))
+
 # [1.1.0](https://github.com/eco/eco-routes-stoyan/compare/v1.0.0...v1.1.0) (2025-04-21)
 
 
