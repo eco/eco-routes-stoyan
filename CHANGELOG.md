@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/eco/eco-routes-stoyan/compare/v1.0.0...v1.1.0) (2025-04-21)
+
+
+### Features
+
+* new stuff ([10116bf](https://github.com/eco/eco-routes-stoyan/commit/10116bfcf44a5a15533edfef31552c54f4da3f5a))
+
 # 1.0.0 (2025-04-21)
 
 
