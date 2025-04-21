@@ -5,10 +5,11 @@ import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {MessageBridgeProver} from "./prover/MessageBridgeProver.sol";
+import {BaseProver} from "./prover/BaseProver.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IInbox} from "./interfaces/IInbox.sol";
+
 import {Intent, Route, Call, TokenAmount} from "./types/Intent.sol";
 import {Semver} from "./libs/Semver.sol";
 
@@ -23,9 +24,6 @@ contract Inbox is IInbox, Ownable, Semver {
     using SafeERC20 for IERC20;
 
     bytes4 public constant IPROVER_INTERFACE_ID = 0xd8e1f34f; //type(IProver).interfaceId
-
-    // Mapping of intent hash on the src chain to its claimant
-    mapping(bytes32 => address) public fulfilled;
 
     // Mapping of solvers to if they are whitelisted
     mapping(address => bool) public solverWhitelist;
@@ -59,178 +57,106 @@ contract Inbox is IInbox, Ownable, Semver {
      * @param _expectedHash The hash of the intent as created on the source chain
      * @return Array of execution results from each call
      */
-    function fulfillStorage(
+    function fulfill(
         Route memory _route,
         bytes32 _rewardHash,
         address _claimant,
-        bytes32 _expectedHash
+        bytes32 _expectedHash,
+        address _localProver
     ) public payable override returns (bytes[] memory) {
         bytes[] memory result = _fulfill(
             _route,
             _rewardHash,
             _claimant,
-            _expectedHash
+            _expectedHash,
+            _localProver
         );
-
-        fulfilled[_expectedHash] = _claimant;
-
-        emit ToBeProven(_expectedHash, _route.source, _claimant);
 
         return result;
     }
 
-    /**
-     * @notice Fulfills an intent and initiates proving via message bridge
-     * @param _route The route of the intent
-     * @param _rewardHash The hash of the reward
-     * @param _claimant The address that will receive the reward on the source chain
-     * @param _expectedHash The hash of the intent as created on the source chain
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    function fulfillMessageBridge(
+    function fulfillAndProve(
         Route memory _route,
         bytes32 _rewardHash,
         address _claimant,
         bytes32 _expectedHash,
         address _localProver,
-        address _sourceChainProver,
         bytes calldata _data
     ) public payable returns (bytes[] memory) {
-        bytes[] memory results = _fulfill(
+        bytes[] memory result = _fulfill(
             _route,
             _rewardHash,
             _claimant,
-            _expectedHash
+            _expectedHash,
+            _localProver
         );
-
-        fulfilled[_expectedHash] = _claimant;
 
         bytes32[] memory hashes = new bytes32[](1);
         address[] memory claimants = new address[](1);
         hashes[0] = _expectedHash;
         claimants[0] = _claimant;
 
-        uint256 fee = MessageBridgeProver(_localProver).fetchFee(
+        BaseProver(_localProver).initiateProving(
             _route.source,
             hashes,
             claimants,
-            _sourceChainProver,
-            _data
-        );
-        uint256 currentBalance = address(this).balance;
-        if (currentBalance < fee) {
-            revert InsufficientFee(fee);
-        }
-        if (currentBalance > fee) {
-            (bool success, ) = payable(msg.sender).call{
-                value: currentBalance - fee
-            }("");
-            if (!success) {
-                revert NativeTransferFailed();
-            }
-        }
-        MessageBridgeProver(_localProver).initiateProving{value: fee}(
-            _route.source,
-            hashes,
-            claimants,
-            _sourceChainProver,
             _data
         );
 
-        return results;
+        return result;
     }
 
-    /**
-     * @notice Fulfills an intent to be proven in a batch via a meessage bridge
-     * @dev Less expensive but slower fulfillMessageBridge. Batch dispatched when sendBatch is called.
-     * @param _route The route of the intent
-     * @param _rewardHash The hash of the reward
-     * @param _claimant The address that will receive the reward on the source chain
-     * @param _expectedHash The hash of the intent as created on the source chain
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    function fulfillMessageBridgeBatched(
-        Route calldata _route,
-        bytes32 _rewardHash,
-        address _claimant,
-        bytes32 _expectedHash,
-        address _localProver,
-        address _sourceChainProver
-    ) external payable returns (bytes[] memory) {
-        emit AddToBatch(
-            _expectedHash,
-            _route.source,
-            _claimant,
-            _localProver,
-            _sourceChainProver
-        );
+    // /**
+    //  * @notice initiates proving of a batch of fulfilled intents
+    //  * @dev Intent hashes must correspond to fulfilled intents from specified source chain
+    //  * @param _sourceChainID Chain ID of the source chain
 
-        bytes[] memory results = _fulfill(
-            _route,
-            _rewardHash,
-            _claimant,
-            _expectedHash
-        );
+    //  * @param _intentHashes Hashes of the intents to be proven
+    //  * @param _localProver Address of prover on the destination chain
+    //  * @param _sourceChainProver Address of prover on the source chain
+    //  */
+    // function sendFulfilled(
+    //     uint256 _sourceChainID,
+    //     bytes32[] calldata _intentHashes,
+    //     address _localProver,
+    //     bytes calldata _data
+    // ) public payable {
+    //     uint256 size = _intentHashes.length;
+    //     address[] memory claimants = new address[](size);
+    //     for (uint256 i = 0; i < size; ++i) {
+    //         address claimant = BaseProver(_localProver).fulfilled(
+    //             _intentHashes[i]
+    //         );
 
-        fulfilled[_expectedHash] = _claimant;
+    //         if (claimant == address(0)) {
+    //             revert IntentNotFulfilled(_intentHashes[i]);
+    //         }
+    //         claimants[i] = claimant;
+    //     }
 
-        return results;
-    }
+    //     uint256 fee = BaseProver(_localProver).fetchFee(
+    //         _sourceChainID,
+    //         _intentHashes,
+    //         claimants,
+    //         _data
+    //     );
+    //     if (msg.value < fee) {
+    //         revert InsufficientFee(fee);
+    //     }
+    //     (bool success, ) = payable(msg.sender).call{value: msg.value - fee}("");
+    //     if (!success) {
+    //         revert NativeTransferFailed();
+    //     }
 
-    /**
-     * @notice initiates proving of a batch of fulfilled intents
-     * @dev Intent hashes must correspond to fulfilled intents from specified source chain
-     * @param _sourceChainID Chain ID of the source chain
+    //     emit BatchSent(_intentHashes, _sourceChainID);
 
-     * @param _intentHashes Hashes of the intents to be proven
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    function sendFulfilled(
-        uint256 _sourceChainID,
-        bytes32[] calldata _intentHashes,
-        address _localProver,
-        address _sourceChainProver,
-        bytes calldata _data
-    ) public payable {
-        uint256 size = _intentHashes.length;
-        address[] memory claimants = new address[](size);
-        for (uint256 i = 0; i < size; ++i) {
-            address claimant = fulfilled[_intentHashes[i]];
-
-            if (claimant == address(0)) {
-                revert IntentNotFulfilled(_intentHashes[i]);
-            }
-            claimants[i] = claimant;
-        }
-
-        uint256 fee = MessageBridgeProver(_localProver).fetchFee(
-            _sourceChainID,
-            _intentHashes,
-            claimants,
-            _sourceChainProver,
-            _data
-        );
-        if (msg.value < fee) {
-            revert InsufficientFee(fee);
-        }
-        (bool success, ) = payable(msg.sender).call{value: msg.value - fee}("");
-        if (!success) {
-            revert NativeTransferFailed();
-        }
-
-        emit BatchSent(_intentHashes, _sourceChainID);
-
-        MessageBridgeProver(_localProver).initiateProving{value: fee}(
-            _sourceChainID,
-            _intentHashes,
-            claimants,
-            _sourceChainProver,
-            _data
-        );
-    }
+    //     BaseProver(_localProver).initiateProving{value: fee}(
+    //         _sourceChainID,
+    //         _intentHashes,
+    //         claimants,
+    //         _data
+    //     );
+    // }
 
     /**
      * @notice Makes solving public if currently restricted
@@ -270,7 +196,8 @@ contract Inbox is IInbox, Ownable, Semver {
         Route memory _route,
         bytes32 _rewardHash,
         address _claimant,
-        bytes32 _expectedHash
+        bytes32 _expectedHash,
+        address _prover
     ) internal returns (bytes[] memory) {
         if (_route.destination != block.chainid) {
             revert WrongChain(_route.destination);
@@ -291,12 +218,14 @@ contract Inbox is IInbox, Ownable, Semver {
         if (intentHash != _expectedHash) {
             revert InvalidHash(_expectedHash);
         }
-        if (fulfilled[intentHash] != address(0)) {
+        if (BaseProver(_prover).fulfilled(intentHash) != address(0)) {
             revert IntentAlreadyFulfilled(intentHash);
         }
         if (_claimant == address(0)) {
             revert ZeroClaimant();
         }
+
+        BaseProver(_prover).markFulfilled(intentHash, _claimant);
 
         emit Fulfillment(_expectedHash, _route.source, _claimant);
 
@@ -326,12 +255,10 @@ contract Inbox is IInbox, Ownable, Semver {
                     IPROVER_INTERFACE_ID
                 )
             );
-
             if (isProverCall) {
                 // call to prover
                 revert CallToProver();
             }
-
             (bool success, bytes memory result) = call.target.call{
                 value: call.value
             }(call.data);

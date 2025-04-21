@@ -14,20 +14,17 @@ contract TestMessageBridgeProver is MessageBridgeProver {
     uint256 public lastSourceChainId;
     bytes32[] public lastIntentHashes;
     address[] public lastClaimants;
-    address public lastSourceChainProver;
+    bytes32 public lastSourceChainProver;
     bytes public lastData;
 
     uint256 public feeAmount = 100000;
 
     // No events needed for testing
 
-    constructor(address[] memory _provers) {
-        // Add itself to the whitelist by default
-        proverWhitelist[address(this)] = true;
-        for (uint256 i = 0; i < _provers.length; i++) {
-            proverWhitelist[_provers[i]] = true;
-        }
-    }
+    constructor(
+        address _inbox,
+        address[] memory _provers
+    ) MessageBridgeProver(_inbox, _provers) {}
 
     function addWhitelistedProver(address _prover) external {
         proverWhitelist[_prover] = true;
@@ -41,7 +38,6 @@ contract TestMessageBridgeProver is MessageBridgeProver {
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) external payable override {
         dispatched = true;
@@ -59,7 +55,7 @@ contract TestMessageBridgeProver is MessageBridgeProver {
             lastClaimants.push(_claimants[i]);
         }
 
-        lastSourceChainProver = _sourceChainProver;
+        lastSourceChainProver = abi.decode(_data, (bytes32));
         lastData = _data;
     }
 
@@ -71,7 +67,6 @@ contract TestMessageBridgeProver is MessageBridgeProver {
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
-        address _sourceChainProver,
         bytes calldata _data
     ) public view override returns (uint256) {
         return feeAmount;

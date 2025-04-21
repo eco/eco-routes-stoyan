@@ -184,64 +184,47 @@ interface IInbox is ISemver {
      * @param _expectedHash Expected hash for validation
      * @return Array of execution results
      */
-    function fulfillStorage(
+    function fulfill(
         Route calldata _route,
         bytes32 _rewardHash,
         address _claimant,
-        bytes32 _expectedHash
-    ) external payable returns (bytes[] memory);
-
-    /**
-     * @notice Fulfills an intent and initiates proving via message bridge
-     * @param _route The route of the intent
-     * @param _rewardHash The hash of the reward
-     * @param _claimant The address that will receive the reward on the source chain
-     * @param _expectedHash The hash of the intent as created on the source chain
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    function fulfillMessageBridge(
-        Route memory _route,
-        bytes32 _rewardHash,
-        address _claimant,
         bytes32 _expectedHash,
-        address _localProver,
-        address _sourceChainProver,
-        bytes calldata _data
+        address _localProver
     ) external payable returns (bytes[] memory);
 
     /**
-     * @notice Fulfills an intent to be proven in a batch via a meessage bridge
-     * @dev Less expensive but slower fulfillMessageBridge. Batch dispatched when sendBatch is called.
-     * @param _route The route of the intent
-     * @param _rewardHash The hash of the reward
-     * @param _claimant The address that will receive the reward on the source chain
-     * @param _expectedHash The hash of the intent as created on the source chain
+     * @notice Fulfills an intent using storage proofs
+     * @dev Validates intent hash, executes calls, and marks as fulfilled
+     * @param _route Route information for the intent
+     * @param _rewardHash Hash of the reward details
+     * @param _claimant Address eligible to claim rewards
+     * @param _expectedHash Expected hash for validation
      * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
+     * @param _data Additional data for message formatting
+     * @return Array of execution results
      */
-    function fulfillMessageBridgeBatched(
+    function fulfillAndProve(
         Route calldata _route,
         bytes32 _rewardHash,
         address _claimant,
         bytes32 _expectedHash,
         address _localProver,
-        address _sourceChainProver
+        bytes calldata _data
     ) external payable returns (bytes[] memory);
 
-    /**
-     * @notice initiates proving of a batch of fulfilled intents
-     * @dev Intent hashes must correspond to fulfilled intents from specified source chain
-     * @param _sourceChainID Chain ID of the source chain
-     * @param _intentHashes Hashes of the intents to be proven
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    function sendFulfilled(
-        uint256 _sourceChainID,
-        bytes32[] calldata _intentHashes,
-        address _localProver,
-        address _sourceChainProver,
-        bytes calldata _data
-    ) external payable;
+    // /**
+    //  * @notice initiates proving of a batch of fulfilled intents
+    //  * @dev Intent hashes must correspond to fulfilled intents from specified source chain
+    //  * @param _sourceChainID Chain ID of the source chain
+    //  * @param _intentHashes Hashes of the intents to be proven
+    //  * @param _localProver Address of prover on the destination chain
+    //  * @param _sourceChainProver Address of prover on the source chain
+    //  */
+    // function sendFulfilled(
+    //     uint256 _sourceChainID,
+    //     bytes32[] calldata _intentHashes,
+    //     address _localProver,
+    //     address _sourceChainProver,
+    //     bytes calldata _data
+    // ) external payable;
 }
