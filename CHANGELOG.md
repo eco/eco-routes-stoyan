@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/eco/eco-routes-stoyan/compare/v1.1.1...v1.1.2) (2025-04-21)
+
+
+### Bug Fixes
+
+* set the versioning strategy to npm ([cc9234f](https://github.com/eco/eco-routes-stoyan/commit/cc9234f1f5bda416308c25d7353b13460395edce))
+
 ## [1.1.1](https://github.com/eco/eco-routes-stoyan/compare/v1.1.0...v1.1.1) (2025-04-21)
 
 
