@@ -106,6 +106,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           ECO_CHAINS_TAG: ${{ github.event.client_payload.tag }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           # CONTRACT_VERIFICATION_KEYS is already set by aws-secretsmanager-get-secrets
         run: |
           # echo "Printing contract verification keys"
