@@ -46,7 +46,7 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
      * @notice Unauthorized call to initiate proving
      * @param _sender Address that initiated
      */
-    error UnauthorizedInitiateProving(address _sender);
+    error UnauthorizedDestinationProve(address _sender);
 
     /**
      * @notice Address of local Metalayer router
@@ -89,7 +89,7 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         address sender = _sender.bytes32ToAddress();
 
         if (!proverWhitelist[sender]) {
-            revert UnauthorizedInitiateProving(sender);
+            revert UnauthorizedDestinationProve(sender);
         }
 
         // Decode message containing intent hashes and claimants
@@ -118,14 +118,29 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
      * @param _claimants Array of claimant addresses
      * @param _data Additional data for message formatting
      */
-    function initiateProving(
+    function destinationProve(
+        address _sender,
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
         bytes calldata _data
     ) external payable override {
         if (msg.sender != INBOX) {
-            revert UnauthorizedInitiateProving(msg.sender);
+            revert UnauthorizedDestinationProve(msg.sender);
+        }
+
+        uint256 fee = fetchFee(
+            _sourceChainId,
+            _intentHashes,
+            _claimants,
+            _data
+        );
+        if (msg.value < fee) {
+            revert InsufficientFee(fee);
+        }
+        (bool success, ) = payable(_sender).call{value: msg.value - fee}("");
+        if (!success) {
+            revert NativeTransferFailed();
         }
 
         (
@@ -161,7 +176,7 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
         bytes calldata _data
-    ) external view override returns (uint256) {
+    ) public view override returns (uint256) {
         (
             uint32 domain,
             bytes32 recipient,

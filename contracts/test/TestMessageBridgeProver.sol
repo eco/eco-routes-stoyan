@@ -34,7 +34,8 @@ contract TestMessageBridgeProver is MessageBridgeProver {
      * @notice Mock implementation of initiateProving
      * @dev Records arguments and marks dispatched = true
      */
-    function initiateProving(
+    function destinationProve(
+        address _sender,
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,

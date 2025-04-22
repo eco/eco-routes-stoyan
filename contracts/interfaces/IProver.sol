@@ -22,13 +22,4 @@ interface IProver is ISemver {
      * @return string indicating the prover's mechanism
      */
     function getProofType() external pure returns (string memory);
-
-    /**
-     * @notice Gets the address eligible to claim rewards for a proven intent
-     * @param intentHash Hash of the intent to query
-     * @return Address of the claimant, or zero address if unproven
-     */
-    function getIntentClaimant(
-        bytes32 intentHash
-    ) external view returns (address);
 }

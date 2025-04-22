@@ -5,6 +5,17 @@ pragma solidity ^0.8.26;
 import {BaseProver} from "./BaseProver.sol";
 
 abstract contract MessageBridgeProver is BaseProver {
+    /**
+     * @notice Insufficient fee provided for Hyperlane fulfillment
+     * @param _requiredFee Amount of fee required
+     */
+    error InsufficientFee(uint256 _requiredFee);
+
+    /**
+     * @notice Native token transfer failed
+     */
+    error NativeTransferFailed();
+
     mapping(address => bool) public proverWhitelist;
 
     constructor(address _inbox, address[] memory _provers) BaseProver(_inbox) {

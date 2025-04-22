@@ -19,7 +19,8 @@ contract TestProver is BaseProver {
         return "storage";
     }
 
-    function initiateProving(
+    function destinationProve(
+        address _sender,
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
