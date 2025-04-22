@@ -165,17 +165,6 @@ interface IInbox is ISemver {
     error IntentNotFulfilled(bytes32 _hash);
 
     /**
-     * @notice Insufficient fee provided for Hyperlane fulfillment
-     * @param _requiredFee Amount of fee required
-     */
-    error InsufficientFee(uint256 _requiredFee);
-
-    /**
-     * @notice Native token transfer failed
-     */
-    error NativeTransferFailed();
-
-    /**
      * @notice Fulfills an intent using storage proofs
      * @dev Validates intent hash, executes calls, and marks as fulfilled
      * @param _route Route information for the intent

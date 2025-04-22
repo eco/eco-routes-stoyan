@@ -28,6 +28,9 @@ contract Inbox is IInbox, Ownable, Semver {
     // Mapping of solvers to if they are whitelisted
     mapping(address => bool) public solverWhitelist;
 
+    // Mapping of intent hashes to their claimant address
+    mapping(bytes32 => address) public fulfilled;
+
     // Is solving public
     bool public isSolvingPublic;
 
@@ -96,67 +99,34 @@ contract Inbox is IInbox, Ownable, Semver {
         hashes[0] = _expectedHash;
         claimants[0] = _claimant;
 
-        BaseProver(_localProver).initiateProving(
-            _route.source,
-            hashes,
-            claimants,
-            _data
-        );
-
+        initiateProving(_route.source, hashes, _localProver, _data);
         return result;
     }
 
-    // /**
-    //  * @notice initiates proving of a batch of fulfilled intents
-    //  * @dev Intent hashes must correspond to fulfilled intents from specified source chain
-    //  * @param _sourceChainID Chain ID of the source chain
+    function initiateProving(
+        uint256 _sourceChainId,
+        bytes32[] memory _intentHashes,
+        address _localProver,
+        bytes calldata _data
+    ) public payable {
+        uint256 size = _intentHashes.length;
+        address[] memory claimants = new address[](size);
+        for (uint256 i = 0; i < size; ++i) {
+            address claimant = fulfilled[_intentHashes[i]];
 
-    //  * @param _intentHashes Hashes of the intents to be proven
-    //  * @param _localProver Address of prover on the destination chain
-    //  * @param _sourceChainProver Address of prover on the source chain
-    //  */
-    // function sendFulfilled(
-    //     uint256 _sourceChainID,
-    //     bytes32[] calldata _intentHashes,
-    //     address _localProver,
-    //     bytes calldata _data
-    // ) public payable {
-    //     uint256 size = _intentHashes.length;
-    //     address[] memory claimants = new address[](size);
-    //     for (uint256 i = 0; i < size; ++i) {
-    //         address claimant = BaseProver(_localProver).fulfilled(
-    //             _intentHashes[i]
-    //         );
-
-    //         if (claimant == address(0)) {
-    //             revert IntentNotFulfilled(_intentHashes[i]);
-    //         }
-    //         claimants[i] = claimant;
-    //     }
-
-    //     uint256 fee = BaseProver(_localProver).fetchFee(
-    //         _sourceChainID,
-    //         _intentHashes,
-    //         claimants,
-    //         _data
-    //     );
-    //     if (msg.value < fee) {
-    //         revert InsufficientFee(fee);
-    //     }
-    //     (bool success, ) = payable(msg.sender).call{value: msg.value - fee}("");
-    //     if (!success) {
-    //         revert NativeTransferFailed();
-    //     }
-
-    //     emit BatchSent(_intentHashes, _sourceChainID);
-
-    //     BaseProver(_localProver).initiateProving{value: fee}(
-    //         _sourceChainID,
-    //         _intentHashes,
-    //         claimants,
-    //         _data
-    //     );
-    // }
+            if (claimant == address(0)) {
+                revert IntentNotFulfilled(_intentHashes[i]);
+            }
+            claimants[i] = claimant;
+        }
+        BaseProver(_localProver).destinationProve{value: msg.value}(
+            msg.sender,
+            _sourceChainId,
+            _intentHashes,
+            claimants,
+            _data
+        );
+    }
 
     /**
      * @notice Makes solving public if currently restricted
@@ -218,14 +188,12 @@ contract Inbox is IInbox, Ownable, Semver {
         if (intentHash != _expectedHash) {
             revert InvalidHash(_expectedHash);
         }
-        if (BaseProver(_prover).fulfilled(intentHash) != address(0)) {
+        if (fulfilled[intentHash] != address(0)) {
             revert IntentAlreadyFulfilled(intentHash);
         }
         if (_claimant == address(0)) {
             revert ZeroClaimant();
         }
-
-        BaseProver(_prover).markFulfilled(intentHash, _claimant);
 
         emit Fulfillment(_expectedHash, _route.source, _claimant);
 

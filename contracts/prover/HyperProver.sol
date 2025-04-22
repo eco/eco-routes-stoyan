@@ -44,7 +44,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
      * @notice Unauthorized call to initiate proving
      * @param _sender Address that initiated
      */
-    error UnauthorizedInitiateProving(address _sender);
+    error UnauthorizedDestinationProve(address _sender);
 
     /**
      * @notice Address of local Hyperlane mailbox
@@ -86,7 +86,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         address sender = _sender.bytes32ToAddress();
 
         if (!proverWhitelist[sender]) {
-            revert UnauthorizedInitiateProving(sender);
+            revert UnauthorizedDestinationProve(sender);
         }
 
         // Decode message containing intent hashes and claimants
@@ -107,14 +107,28 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         }
     }
 
-    function initiateProving(
+    function destinationProve(
+        address _sender,
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
         address[] calldata _claimants,
         bytes calldata _data
     ) external payable override {
         if (msg.sender != INBOX) {
-            revert UnauthorizedInitiateProving(msg.sender);
+            revert UnauthorizedDestinationProve(msg.sender);
+        }
+        uint256 fee = fetchFee(
+            _sourceChainId,
+            _intentHashes,
+            _claimants,
+            _data
+        );
+        if (msg.value < fee) {
+            revert InsufficientFee(fee);
+        }
+        (bool success, ) = payable(_sender).call{value: msg.value - fee}("");
+        if (!success) {
+            revert NativeTransferFailed();
         }
 
         emit BatchSent(_intentHashes, _sourceChainId);
