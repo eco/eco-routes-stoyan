@@ -66,7 +66,7 @@ contract Inbox is IInbox, Ownable, Semver {
         address _claimant,
         bytes32 _expectedHash,
         address _localProver
-    ) public payable override returns (bytes[] memory) {
+    ) external payable override returns (bytes[] memory) {
         bytes[] memory result = _fulfill(
             _route,
             _rewardHash,
@@ -109,6 +109,10 @@ contract Inbox is IInbox, Ownable, Semver {
         address _localProver,
         bytes calldata _data
     ) public payable {
+        if (_localProver == address(0)) {
+            // storage prover case, this method should do nothing
+            return;
+        }
         uint256 size = _intentHashes.length;
         address[] memory claimants = new address[](size);
         for (uint256 i = 0; i < size; ++i) {
@@ -167,7 +171,7 @@ contract Inbox is IInbox, Ownable, Semver {
         bytes32 _rewardHash,
         address _claimant,
         bytes32 _expectedHash,
-        address _prover
+        address _localProver
     ) internal returns (bytes[] memory) {
         if (_route.destination != block.chainid) {
             revert WrongChain(_route.destination);
@@ -195,7 +199,9 @@ contract Inbox is IInbox, Ownable, Semver {
             revert ZeroClaimant();
         }
 
-        emit Fulfillment(_expectedHash, _route.source, _claimant);
+        fulfilled[intentHash] = _claimant;
+
+        emit Fulfillment(_expectedHash, _route.source, _localProver, _claimant);
 
         uint256 routeTokenCount = _route.tokens.length;
         // Transfer ERC20 tokens to the inbox

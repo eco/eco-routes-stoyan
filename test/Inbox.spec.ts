@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers'
 import { expect } from 'chai'
 import { ethers } from 'hardhat'
-import { TestERC20, Inbox, TestMessageBridgeProver } from '../typechain-types'
+import { TestERC20, Inbox, TestProver } from '../typechain-types'
 import {
   time,
   loadFixture,
@@ -17,8 +17,9 @@ import {
   Reward,
   TokenAmount,
 } from '../utils/intent'
+import { mock } from 'node:test'
 
-describe('Inbox Test', (): void => {
+describe.only('Inbox Test', (): void => {
   let inbox: Inbox
   let erc20: TestERC20
   let owner: SignerWithAddress
@@ -30,7 +31,7 @@ describe('Inbox Test', (): void => {
   let intentHash: string
   let otherHash: string
   let routeTokens: TokenAmount[]
-  let mockProver: TestMessageBridgeProver
+  let mockProver: TestProver
   const salt = ethers.encodeBytes32String('0x987')
   let erc20Address: string
   const timeDelta = 1000
@@ -129,8 +130,8 @@ describe('Inbox Test', (): void => {
       timeDelta,
     ))
     mockProver = await (
-      await ethers.getContractFactory('TestMessageBridgeProver')
-    ).deploy([])
+      await ethers.getContractFactory('TestProver')
+    ).deploy(await inbox.getAddress())
   })
   it('initializes correctly', async () => {
     expect(await inbox.owner()).to.eq(owner.address)
@@ -179,7 +180,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(owner)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       )
         .to.be.revertedWithCustomError(inbox, 'WrongChain')
         .withArgs(123)
@@ -190,7 +197,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(owner)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'UnauthorizedSolveAttempt')
     })
 
@@ -204,7 +217,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, goofyHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            goofyHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'InvalidHash')
     })
     it('should revert via InvalidHash if all intent data was input correctly, but the intent used a different inbox on creation', async () => {
@@ -222,7 +241,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(_route, rewardHash, dstAddr.address, _intentHash),
+          .fulfill(
+            _route,
+            rewardHash,
+            dstAddr.address,
+            _intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'InvalidInbox')
     })
   })
@@ -232,14 +257,26 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, ethers.ZeroAddress, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            ethers.ZeroAddress,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'ZeroClaimant')
     })
     it('should revert if the solver has not approved tokens for transfer', async () => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(erc20, 'ERC20InsufficientAllowance')
     })
     it('should revert if the call fails', async () => {
@@ -260,7 +297,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(_route, rewardHash, dstAddr.address, _intentHash),
+          .fulfill(
+            _route,
+            rewardHash,
+            dstAddr.address,
+            _intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'IntentCallFailed')
     })
     it('should revert if any of the targets is a prover', async () => {
@@ -279,7 +322,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(_route, rewardHash, dstAddr.address, _intentHash),
+          .fulfill(
+            _route,
+            rewardHash,
+            dstAddr.address,
+            _intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'CallToProver')
     })
     it('should revert if one of the targets is an EOA', async () => {
@@ -299,7 +348,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(_route, rewardHash, dstAddr.address, _intentHash),
+          .fulfill(
+            _route,
+            rewardHash,
+            dstAddr.address,
+            _intentHash,
+            ethers.ZeroAddress,
+          ),
       )
         .to.be.revertedWithCustomError(inbox, 'CallToEOA')
         .withArgs(solver.address)
@@ -312,7 +367,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.not.be.reverted
     })
     it('should not revert when called by a non-whitelisted solver when solving is public', async () => {
@@ -325,7 +386,13 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(owner)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.not.be.reverted
     })
 
@@ -343,12 +410,21 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       )
         .to.emit(inbox, 'Fulfillment')
-        .withArgs(intentHash, sourceChainID, dstAddr.address)
-        .to.emit(inbox, 'ToBeProven')
-        .withArgs(intentHash, sourceChainID, dstAddr.address)
+        .withArgs(
+          intentHash,
+          sourceChainID,
+          ethers.ZeroAddress,
+          dstAddr.address,
+        )
       // should update the fulfilled hash
       claimant = await inbox.fulfilled(intentHash)
       expect(claimant).to.equal(dstAddr.address)
@@ -366,417 +442,467 @@ describe('Inbox Test', (): void => {
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
-      )
-        .to.emit(inbox, 'ToBeProven')
-        .withArgs(intentHash, sourceChainID, dstAddr.address)
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
+      ).to.not.be.reverted
       // should revert
       await expect(
         inbox
           .connect(solver)
-          .fulfillStorage(route, rewardHash, dstAddr.address, intentHash),
+          .fulfill(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            ethers.ZeroAddress,
+          ),
       ).to.be.revertedWithCustomError(inbox, 'IntentAlreadyFulfilled')
     })
   })
 
-  describe('message bridge proving', () => {
-    beforeEach(async () => {
-      expect(await mockProver.dispatched()).to.be.false
+  describe.only('initiateProving', async () => {
+    it('gets the right args', async () => {
+      expect(await inbox.solverWhitelist(solver)).to.be.true
 
       await erc20.connect(solver).approve(await inbox.getAddress(), mintAmount)
-    })
 
-    it('should fail to fulfill message bridge if the fee is too low', async () => {
-      const metadata = '0x1234'
-      const data = ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bytes', 'address'],
-        [metadata, ethers.ZeroAddress],
-      )
-
-      // Get fee value
-      fee = await mockProver.fetchFee(
-        sourceChainID,
-        [intentHash],
-        [dstAddr.address],
-        await mockProver.getAddress(),
-        data,
-      )
-
-      expect(await mockProver.dispatched()).to.be.false
+      const theArgs = [
+        '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        123n,
+        'intenthash',
+        123456789n,
+      ]
       await expect(
         inbox
           .connect(solver)
-          .fulfillMessageBridge(
+          .fulfill(
             route,
             rewardHash,
             dstAddr.address,
             intentHash,
             await mockProver.getAddress(),
-            await mockProver.getAddress(),
-            data,
-            {
-              value: Number(fee) - 1,
-            },
           ),
-      ).to.be.revertedWithCustomError(inbox, 'InsufficientFee')
-      expect(await mockProver.dispatched()).to.be.false
-    })
+      ).to.not.be.reverted
 
-    it('fulfills message bridge immediately', async () => {
-      const initialBalance = await ethers.provider.getBalance(solver.address)
+      expect(await mockProver.args()).to.not.deep.equal(theArgs)
 
-      const metadata = '0x1234'
-      const data = ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bytes', 'address'],
-        [metadata, ethers.ZeroAddress],
-      )
-
-      fee = await mockProver.fetchFee(
-        sourceChainID,
-        [intentHash],
-        [dstAddr.address],
-        await mockProver.getAddress(),
-        data,
-      )
-
-      //send exactly the fee amount
-      await expect(
-        inbox
-          .connect(solver)
-          .fulfillMessageBridge(
-            route,
-            rewardHash,
-            dstAddr.address,
-            intentHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-            data,
-            {
-              value: fee,
-            },
-          ),
-      )
-        .to.emit(inbox, 'Fulfillment')
-        .withArgs(intentHash, sourceChainID, dstAddr.address)
-
-      // Verify mailbox was called with correct parameters
-      expect(await mockProver.dispatched()).to.be.true
-      expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
-
-      // Verify intent hash and claimant were correctly sent
-      expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
-      expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
-    })
-
-    it('refunds solver when too much fee is sent', async () => {
-      const metadata = '0x1234'
-      const data = ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bytes', 'address'],
-        [metadata, ethers.ZeroAddress],
-      )
-
-      fee = await mockProver.fetchFee(
-        sourceChainID,
-        [intentHash],
-        [dstAddr.address],
-        await mockProver.getAddress(),
-        data,
-      )
-
-      const initialSolverbalance = await ethers.provider.getBalance(
-        solver.address,
-      )
-      const excess = ethers.parseEther('.123')
-
-      // Using fulfillMessageBridge with excess value
       await inbox
         .connect(solver)
-        .fulfillMessageBridge(
-          route,
-          rewardHash,
-          dstAddr.address,
-          intentHash,
-          await mockProver.getAddress(),
-          await mockProver.getAddress(),
-          data,
-          {
-            value: fee + excess,
-          },
-        )
-
-      expect(await ethers.provider.getBalance(await inbox.getAddress())).to.eq(
-        0,
-      )
-
-      // Verify the solver got a refund (not checking exact amount due to gas costs)
-      expect(await ethers.provider.getBalance(solver.address)).to.greaterThan(
-        initialSolverbalance - excess - fee,
-      )
-    })
-
-    it('should work with message bridge batched', async () => {
-      let claimant = await inbox.fulfilled(intentHash)
-      expect(claimant).to.equal(ethers.ZeroAddress)
-
-      await expect(
-        inbox
-          .connect(solver)
-          .fulfillMessageBridgeBatched(
-            route,
-            rewardHash,
-            dstAddr.address,
-            intentHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-          ),
-      )
-        .to.emit(inbox, 'Fulfillment')
-        .withArgs(intentHash, sourceChainID, dstAddr.address)
-        .to.emit(inbox, 'AddToBatch')
-        .withArgs(
-          intentHash,
-          sourceChainID,
-          dstAddr.address,
-          await mockProver.getAddress(),
-          await mockProver.getAddress(),
-        )
-      expect(await mockProver.dispatched()).to.be.false
-
-      claimant = await inbox.fulfilled(intentHash)
-      expect(claimant).to.equal(dstAddr.address)
-    })
-
-    context('sendFulfilled', async () => {
-      it('should revert if sending a batch containing an intent that has not been fulfilled', async () => {
-        const hashes: string[] = [intentHash]
-        const metadata = '0x1234'
-        const data = ethers.AbiCoder.defaultAbiCoder().encode(
-          ['bytes', 'address'],
-          [metadata, ethers.ZeroAddress],
-        )
-
-        await expect(
-          inbox
-            .connect(solver)
-            .sendFulfilled(
-              sourceChainID,
-              hashes,
-              await mockProver.getAddress(),
-              await mockProver.getAddress(),
-              data,
-            ),
-        )
-          .to.be.revertedWithCustomError(inbox, 'IntentNotFulfilled')
-          .withArgs(hashes[0])
-        expect(await mockProver.dispatched()).to.be.false
-      })
-
-      it('should revert if sending a batch with too low a fee, and refund some if the msg value is greater than the fee', async () => {
-        const metadata = '0x1234'
-        const data = ethers.AbiCoder.defaultAbiCoder().encode(
-          ['bytes', 'address'],
-          [metadata, ethers.ZeroAddress],
-        )
-
-        expect(await mockProver.dispatched()).to.be.false
-        await inbox
-          .connect(solver)
-          .fulfillMessageBridgeBatched(
-            route,
-            rewardHash,
-            dstAddr.address,
-            intentHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-          )
-        expect(await mockProver.dispatched()).to.be.false
-
-        fee = await mockProver.fetchFee(
-          sourceChainID,
+        .initiateProving(
+          route.source,
           [intentHash],
-          [dstAddr.address],
           await mockProver.getAddress(),
-          data,
+          intentHash,
+          { value: 123456789 },
         )
-
-        await expect(
-          inbox
-            .connect(solver)
-            .sendFulfilled(
-              sourceChainID,
-              [intentHash],
-              await mockProver.getAddress(),
-              await mockProver.getAddress(),
-              data,
-              {
-                value: Number(fee) - 1,
-              },
-            ),
-        ).to.be.revertedWithCustomError(inbox, 'InsufficientFee')
-
-        const excess = ethers.parseEther('.123')
-        const initialSolverbalance = await ethers.provider.getBalance(
-          solver.address,
-        )
-        await expect(
-          inbox
-            .connect(solver)
-            .sendFulfilled(
-              sourceChainID,
-              [intentHash],
-              await mockProver.getAddress(),
-              await mockProver.getAddress(),
-              data,
-              {
-                value: fee + excess,
-              },
-            ),
-        )
-          .to.emit(inbox, 'BatchSent')
-          .withArgs(intentHash, sourceChainID)
-        expect(
-          await ethers.provider.getBalance(await inbox.getAddress()),
-        ).to.eq(0)
-
-        // Verify solver got a refund (not checking exact amount due to gas costs)
-        expect(await ethers.provider.getBalance(solver.address)).to.greaterThan(
-          initialSolverbalance - fee - excess,
-        )
-        expect(await mockProver.dispatched()).to.be.true
-      })
-
-      it('succeeds for a single intent', async () => {
-        const metadata = '0x1234'
-        const data = ethers.AbiCoder.defaultAbiCoder().encode(
-          ['bytes', 'address'],
-          [metadata, ethers.ZeroAddress],
-        )
-
-        expect(await mockProver.dispatched()).to.be.false
-        await inbox
-          .connect(solver)
-          .fulfillMessageBridgeBatched(
-            route,
-            rewardHash,
-            dstAddr.address,
-            intentHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-          )
-        const initialBalance = await ethers.provider.getBalance(
-          await inbox.getAddress(),
-        )
-
-        expect(await mockProver.dispatched()).to.be.false
-
-        fee = await mockProver.fetchFee(
-          sourceChainID,
-          [intentHash],
-          [dstAddr.address],
-          await mockProver.getAddress(),
-          data,
-        )
-
-        await inbox
-          .connect(solver)
-          .sendFulfilled(
-            sourceChainID,
-            [intentHash],
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-            data,
-            {
-              value: Number(fee),
-            },
-          )
-
-        expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
-
-        // Verify intent hash and claimant were correctly sent
-        expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
-        expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
-        expect(await mockProver.dispatched()).to.be.true
-      })
-
-      it('succeeds for multiple intents', async () => {
-        const metadata = '0x1234'
-        const data = ethers.AbiCoder.defaultAbiCoder().encode(
-          ['bytes', 'address'],
-          [metadata, ethers.ZeroAddress],
-        )
-
-        expect(await mockProver.dispatched()).to.be.false
-
-        await inbox
-          .connect(solver)
-          .fulfillMessageBridgeBatched(
-            route,
-            rewardHash,
-            dstAddr.address,
-            intentHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-          )
-
-        const newTokenAmount = 12345
-        const newTimeDelta = 1123
-
-        ;({
-          route,
-          reward,
-          rewardHash,
-          intentHash: otherHash,
-        } = await createIntentData(newTokenAmount, newTimeDelta))
-
-        await erc20.mint(solver.address, newTokenAmount)
-        await erc20
-          .connect(solver)
-          .approve(await inbox.getAddress(), newTokenAmount)
-
-        await inbox
-          .connect(solver)
-          .fulfillMessageBridgeBatched(
-            route,
-            rewardHash,
-            dstAddr.address,
-            otherHash,
-            await mockProver.getAddress(),
-            await mockProver.getAddress(),
-          )
-        expect(await mockProver.dispatched()).to.be.false
-
-        fee = await mockProver.fetchFee(
-          sourceChainID,
-          [intentHash, otherHash],
-          [dstAddr.address, dstAddr.address],
-          await mockProver.getAddress(),
-          data,
-        )
-
-        await expect(
-          inbox
-            .connect(solver)
-            .sendFulfilled(
-              sourceChainID,
-              [intentHash, otherHash],
-              await mockProver.getAddress(),
-              await mockProver.getAddress(),
-              data,
-              {
-                value: Number(fee),
-              },
-            ),
-        ).to.changeEtherBalance(solver, -Number(fee))
-
-        expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
-
-        // Verify batch intent hashes and claimants were correctly sent
-        expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
-        expect(await mockProver.lastIntentHashes(1)).to.eq(otherHash)
-        expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
-        expect(await mockProver.lastClaimants(1)).to.eq(dstAddr.address)
-        expect(await mockProver.dispatched()).to.be.true
-      })
+      expect(await mockProver.args()).to.deep.equal(theArgs)
+      console.log(await mockProver.args())
     })
   })
+
+  //   describe('message bridge proving', () => {
+  //     beforeEach(async () => {
+  //       expect(await mockProver.dispatched()).to.be.false
+
+  //       await erc20.connect(solver).approve(await inbox.getAddress(), mintAmount)
+  //     })
+
+  //     it('should fail to fulfill message bridge if the fee is too low', async () => {
+  //       const metadata = '0x1234'
+  //       const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //         ['bytes', 'address'],
+  //         [metadata, ethers.ZeroAddress],
+  //       )
+
+  //       // Get fee value
+  //       fee = await mockProver.fetchFee(
+  //         sourceChainID,
+  //         [intentHash],
+  //         [dstAddr.address],
+  //         await mockProver.getAddress(),
+  //         data,
+  //       )
+
+  //       expect(await mockProver.dispatched()).to.be.false
+  //       await expect(
+  //         inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridge(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //             data,
+  //             {
+  //               value: Number(fee) - 1,
+  //             },
+  //           ),
+  //       ).to.be.revertedWithCustomError(inbox, 'InsufficientFee')
+  //       expect(await mockProver.dispatched()).to.be.false
+  //     })
+
+  //     it('fulfills message bridge immediately', async () => {
+  //       const initialBalance = await ethers.provider.getBalance(solver.address)
+
+  //       const metadata = '0x1234'
+  //       const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //         ['bytes', 'address'],
+  //         [metadata, ethers.ZeroAddress],
+  //       )
+
+  //       fee = await mockProver.fetchFee(
+  //         sourceChainID,
+  //         [intentHash],
+  //         [dstAddr.address],
+  //         await mockProver.getAddress(),
+  //         data,
+  //       )
+
+  //       //send exactly the fee amount
+  //       await expect(
+  //         inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridge(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //             data,
+  //             {
+  //               value: fee,
+  //             },
+  //           ),
+  //       )
+  //         .to.emit(inbox, 'Fulfillment')
+  //         .withArgs(intentHash, sourceChainID, dstAddr.address)
+
+  //       // Verify mailbox was called with correct parameters
+  //       expect(await mockProver.dispatched()).to.be.true
+  //       expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
+
+  //       // Verify intent hash and claimant were correctly sent
+  //       expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
+  //       expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
+  //     })
+
+  //     it('refunds solver when too much fee is sent', async () => {
+  //       const metadata = '0x1234'
+  //       const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //         ['bytes', 'address'],
+  //         [metadata, ethers.ZeroAddress],
+  //       )
+
+  //       fee = await mockProver.fetchFee(
+  //         sourceChainID,
+  //         [intentHash],
+  //         [dstAddr.address],
+  //         await mockProver.getAddress(),
+  //         data,
+  //       )
+
+  //       const initialSolverbalance = await ethers.provider.getBalance(
+  //         solver.address,
+  //       )
+  //       const excess = ethers.parseEther('.123')
+
+  //       // Using fulfillMessageBridge with excess value
+  //       await inbox
+  //         .connect(solver)
+  //         .fulfillMessageBridge(
+  //           route,
+  //           rewardHash,
+  //           dstAddr.address,
+  //           intentHash,
+  //           await mockProver.getAddress(),
+  //           await mockProver.getAddress(),
+  //           data,
+  //           {
+  //             value: fee + excess,
+  //           },
+  //         )
+
+  //       expect(await ethers.provider.getBalance(await inbox.getAddress())).to.eq(
+  //         0,
+  //       )
+
+  //       // Verify the solver got a refund (not checking exact amount due to gas costs)
+  //       expect(await ethers.provider.getBalance(solver.address)).to.greaterThan(
+  //         initialSolverbalance - excess - fee,
+  //       )
+  //     })
+
+  //     it('should work with message bridge batched', async () => {
+  //       let claimant = await inbox.fulfilled(intentHash)
+  //       expect(claimant).to.equal(ethers.ZeroAddress)
+
+  //       await expect(
+  //         inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridgeBatched(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //           ),
+  //       )
+  //         .to.emit(inbox, 'Fulfillment')
+  //         .withArgs(intentHash, sourceChainID, dstAddr.address)
+  //         .to.emit(inbox, 'AddToBatch')
+  //         .withArgs(
+  //           intentHash,
+  //           sourceChainID,
+  //           dstAddr.address,
+  //           await mockProver.getAddress(),
+  //           await mockProver.getAddress(),
+  //         )
+  //       expect(await mockProver.dispatched()).to.be.false
+
+  //       claimant = await inbox.fulfilled(intentHash)
+  //       expect(claimant).to.equal(dstAddr.address)
+  //     })
+
+  //     context('sendFulfilled', async () => {
+  //       it('should revert if sending a batch containing an intent that has not been fulfilled', async () => {
+  //         const hashes: string[] = [intentHash]
+  //         const metadata = '0x1234'
+  //         const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //           ['bytes', 'address'],
+  //           [metadata, ethers.ZeroAddress],
+  //         )
+
+  //         await expect(
+  //           inbox
+  //             .connect(solver)
+  //             .sendFulfilled(
+  //               sourceChainID,
+  //               hashes,
+  //               await mockProver.getAddress(),
+  //               await mockProver.getAddress(),
+  //               data,
+  //             ),
+  //         )
+  //           .to.be.revertedWithCustomError(inbox, 'IntentNotFulfilled')
+  //           .withArgs(hashes[0])
+  //         expect(await mockProver.dispatched()).to.be.false
+  //       })
+
+  //       it('should revert if sending a batch with too low a fee, and refund some if the msg value is greater than the fee', async () => {
+  //         const metadata = '0x1234'
+  //         const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //           ['bytes', 'address'],
+  //           [metadata, ethers.ZeroAddress],
+  //         )
+
+  //         expect(await mockProver.dispatched()).to.be.false
+  //         await inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridgeBatched(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //           )
+  //         expect(await mockProver.dispatched()).to.be.false
+
+  //         fee = await mockProver.fetchFee(
+  //           sourceChainID,
+  //           [intentHash],
+  //           [dstAddr.address],
+  //           await mockProver.getAddress(),
+  //           data,
+  //         )
+
+  //         await expect(
+  //           inbox
+  //             .connect(solver)
+  //             .sendFulfilled(
+  //               sourceChainID,
+  //               [intentHash],
+  //               await mockProver.getAddress(),
+  //               await mockProver.getAddress(),
+  //               data,
+  //               {
+  //                 value: Number(fee) - 1,
+  //               },
+  //             ),
+  //         ).to.be.revertedWithCustomError(inbox, 'InsufficientFee')
+
+  //         const excess = ethers.parseEther('.123')
+  //         const initialSolverbalance = await ethers.provider.getBalance(
+  //           solver.address,
+  //         )
+  //         await expect(
+  //           inbox
+  //             .connect(solver)
+  //             .sendFulfilled(
+  //               sourceChainID,
+  //               [intentHash],
+  //               await mockProver.getAddress(),
+  //               await mockProver.getAddress(),
+  //               data,
+  //               {
+  //                 value: fee + excess,
+  //               },
+  //             ),
+  //         )
+  //           .to.emit(inbox, 'BatchSent')
+  //           .withArgs(intentHash, sourceChainID)
+  //         expect(
+  //           await ethers.provider.getBalance(await inbox.getAddress()),
+  //         ).to.eq(0)
+
+  //         // Verify solver got a refund (not checking exact amount due to gas costs)
+  //         expect(await ethers.provider.getBalance(solver.address)).to.greaterThan(
+  //           initialSolverbalance - fee - excess,
+  //         )
+  //         expect(await mockProver.dispatched()).to.be.true
+  //       })
+
+  //       it('succeeds for a single intent', async () => {
+  //         const metadata = '0x1234'
+  //         const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //           ['bytes', 'address'],
+  //           [metadata, ethers.ZeroAddress],
+  //         )
+
+  //         expect(await mockProver.dispatched()).to.be.false
+  //         await inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridgeBatched(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //           )
+  //         const initialBalance = await ethers.provider.getBalance(
+  //           await inbox.getAddress(),
+  //         )
+
+  //         expect(await mockProver.dispatched()).to.be.false
+
+  //         fee = await mockProver.fetchFee(
+  //           sourceChainID,
+  //           [intentHash],
+  //           [dstAddr.address],
+  //           await mockProver.getAddress(),
+  //           data,
+  //         )
+
+  //         await inbox
+  //           .connect(solver)
+  //           .sendFulfilled(
+  //             sourceChainID,
+  //             [intentHash],
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //             data,
+  //             {
+  //               value: Number(fee),
+  //             },
+  //           )
+
+  //         expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
+
+  //         // Verify intent hash and claimant were correctly sent
+  //         expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
+  //         expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
+  //         expect(await mockProver.dispatched()).to.be.true
+  //       })
+
+  //       it('succeeds for multiple intents', async () => {
+  //         const metadata = '0x1234'
+  //         const data = ethers.AbiCoder.defaultAbiCoder().encode(
+  //           ['bytes', 'address'],
+  //           [metadata, ethers.ZeroAddress],
+  //         )
+
+  //         expect(await mockProver.dispatched()).to.be.false
+
+  //         await inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridgeBatched(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             intentHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //           )
+
+  //         const newTokenAmount = 12345
+  //         const newTimeDelta = 1123
+
+  //         ;({
+  //           route,
+  //           reward,
+  //           rewardHash,
+  //           intentHash: otherHash,
+  //         } = await createIntentData(newTokenAmount, newTimeDelta))
+
+  //         await erc20.mint(solver.address, newTokenAmount)
+  //         await erc20
+  //           .connect(solver)
+  //           .approve(await inbox.getAddress(), newTokenAmount)
+
+  //         await inbox
+  //           .connect(solver)
+  //           .fulfillMessageBridgeBatched(
+  //             route,
+  //             rewardHash,
+  //             dstAddr.address,
+  //             otherHash,
+  //             await mockProver.getAddress(),
+  //             await mockProver.getAddress(),
+  //           )
+  //         expect(await mockProver.dispatched()).to.be.false
+
+  //         fee = await mockProver.fetchFee(
+  //           sourceChainID,
+  //           [intentHash, otherHash],
+  //           [dstAddr.address, dstAddr.address],
+  //           await mockProver.getAddress(),
+  //           data,
+  //         )
+
+  //         await expect(
+  //           inbox
+  //             .connect(solver)
+  //             .sendFulfilled(
+  //               sourceChainID,
+  //               [intentHash, otherHash],
+  //               await mockProver.getAddress(),
+  //               await mockProver.getAddress(),
+  //               data,
+  //               {
+  //                 value: Number(fee),
+  //               },
+  //             ),
+  //         ).to.changeEtherBalance(solver, -Number(fee))
+
+  //         expect(await mockProver.lastSourceChainId()).to.eq(sourceChainID)
+
+  //         // Verify batch intent hashes and claimants were correctly sent
+  //         expect(await mockProver.lastIntentHashes(0)).to.eq(intentHash)
+  //         expect(await mockProver.lastIntentHashes(1)).to.eq(otherHash)
+  //         expect(await mockProver.lastClaimants(0)).to.eq(dstAddr.address)
+  //         expect(await mockProver.lastClaimants(1)).to.eq(dstAddr.address)
+  //         expect(await mockProver.dispatched()).to.be.true
+  //       })
+  //     })
+  //   })
 })

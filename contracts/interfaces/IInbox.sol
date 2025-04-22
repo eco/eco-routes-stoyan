@@ -16,60 +16,15 @@ interface IInbox is ISemver {
      * @notice Emitted when an intent is successfully fulfilled
      * @param _hash Hash of the fulfilled intent
      * @param _sourceChainID ID of the source chain
+     * @param _prover Address of the prover that fulfilled the intent
      * @param _claimant Address eligible to claim rewards
      */
     event Fulfillment(
         bytes32 indexed _hash,
         uint256 indexed _sourceChainID,
-        address indexed _claimant
+        address indexed _prover,
+        address _claimant
     );
-
-    /**
-     * @notice Emitted when an intent is ready for storage proof validation
-     * @param _hash Hash of the intent to prove
-     * @param _sourceChainID ID of the source chain
-     * @param _claimant Address eligible to claim rewards
-     */
-    event ToBeProven(
-        bytes32 indexed _hash,
-        uint256 indexed _sourceChainID,
-        address indexed _claimant
-    );
-
-    /**
-     * @notice Emitted when an intent is fulfilled using Hyperlane instant proving
-     * @param _hash Hash of the fulfilled intent
-     * @param _sourceChainID ID of the source chain
-     * @param _claimant Address eligible to claim rewards
-     */
-    event HyperInstantFulfillment(
-        bytes32 indexed _hash,
-        uint256 indexed _sourceChainID,
-        address indexed _claimant
-    );
-
-    /**
-     * @notice Emitted when an intent is to be added to a message bridge proving batch
-     * @param _hash Hash of the batched intent
-     * @param _sourceChainID ID of the source chain
-     * @param _claimant Address eligible to claim rewards
-     * @param _localProver Address of prover on the destination chain
-     * @param _sourceChainProver Address of prover on the source chain
-     */
-    event AddToBatch(
-        bytes32 indexed _hash,
-        uint256 indexed _sourceChainID,
-        address indexed _claimant,
-        address _localProver,
-        address _sourceChainProver
-    );
-
-    /**
-     * @notice Emitted when a batch of fulfilled intents is sent to the Hyperlane mailbox to be relayed to the source chain
-     * @param _hashes the intent hashes sent in the batch
-     * @param _sourceChainID ID of the source chain
-     */
-    event BatchSent(bytes32[] indexed _hashes, uint256 indexed _sourceChainID);
 
     /**
      * @notice Emitted when intent solving is made public
@@ -81,12 +36,6 @@ interface IInbox is ISemver {
      * @param _mailbox Address of the mailbox contract
      */
     event MailboxSet(address indexed _mailbox);
-
-    /**
-     * @notice Emitted when minimum batcher reward is set
-     * @param _minBatcherReward new minimum batcher reward
-     */
-    event MinBatcherRewardSet(uint96 _minBatcherReward);
 
     /**
      * @notice Emitted when solver whitelist status changes
