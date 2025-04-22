@@ -5,6 +5,17 @@ pragma solidity ^0.8.26;
 import {BaseProver} from "../prover/BaseProver.sol";
 
 contract TestProver is BaseProver {
+    struct argsCheck {
+        address sender;
+        uint256 sourceChainId;
+        bytes32[] intentHashes;
+        address[] claimants;
+        bytes data;
+        uint256 value;
+    }
+
+    argsCheck public args;
+
     constructor(address _inbox) BaseProver(_inbox) {}
 
     function version() external pure returns (string memory) {
@@ -26,6 +37,13 @@ contract TestProver is BaseProver {
         address[] calldata _claimants,
         bytes calldata _data
     ) external payable override {
-        // No-op for testing
+        args = argsCheck({
+            sender: _sender,
+            sourceChainId: _sourceChainId,
+            intentHashes: _intentHashes,
+            claimants: _claimants,
+            data: _data,
+            value: msg.value
+        });
     }
 }
