@@ -234,15 +234,6 @@ export async function deployInbox(
     ethers.keccak256(inboxTx.data),
   ) as Hex
 
-  // on testnet inboxOwner is the deployer, just to make things easier
-  const inbox: Inbox = (await retryFunction(async () => {
-    return await ethers.getContractAt(
-      contractName,
-      inboxAddress,
-      inboxOwnerSigner,
-    )
-  }, ethers.provider)) as any as Inbox
-
   console.log(`${contractName} implementation deployed to: `, inboxAddress)
   addJsonAddress(deployNetwork, `${contractName}`, inboxAddress)
   verifyContract(ethers.provider, contractName, inboxAddress, args)
