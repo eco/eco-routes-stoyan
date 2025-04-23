@@ -33,9 +33,7 @@ describe('HyperProver Test', (): void => {
       await ethers.getContractFactory('TestMailbox')
     ).deploy(await owner.getAddress())
 
-    const inbox = await (
-      await ethers.getContractFactory('Inbox')
-    ).deploy(owner.address, true, [])
+    const inbox = await (await ethers.getContractFactory('Inbox')).deploy()
 
     const token = await (
       await ethers.getContractFactory('TestERC20')

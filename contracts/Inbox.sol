@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {BaseProver} from "./prover/BaseProver.sol";
@@ -19,14 +18,11 @@ import {Semver} from "./libs/Semver.sol";
  * @dev Validates intent hash authenticity and executes calldata. Enables provers
  * to claim rewards on the source chain by checking the fulfilled mapping
  */
-contract Inbox is IInbox, Ownable, Semver {
+contract Inbox is IInbox, Semver {
     using TypeCasts for address;
     using SafeERC20 for IERC20;
 
     bytes4 public constant IPROVER_INTERFACE_ID = 0xd8e1f34f; //type(IProver).interfaceId
-
-    // Mapping of solvers to if they are whitelisted
-    mapping(address => bool) public solverWhitelist;
 
     // Mapping of intent hashes to their claimant address
     mapping(bytes32 => address) public fulfilled;
@@ -34,23 +30,7 @@ contract Inbox is IInbox, Ownable, Semver {
     // Is solving public
     bool public isSolvingPublic;
 
-    /**
-     * @notice Initializes the Inbox contract
-     * @param _owner Address with access to privileged functions
-     * @param _isSolvingPublic Whether solving is public at start
-     * @param _solvers Initial whitelist of solvers (only relevant if solving is not public)
-     */
-    constructor(
-        address _owner,
-        bool _isSolvingPublic,
-        address[] memory _solvers
-    ) Ownable(_owner) {
-        isSolvingPublic = _isSolvingPublic;
-        for (uint256 i = 0; i < _solvers.length; ++i) {
-            solverWhitelist[_solvers[i]] = true;
-            emit SolverWhitelistChanged(_solvers[i], true);
-        }
-    }
+    constructor() {}
 
     /**
      * @notice Fulfills an intent to be proven via storage proofs
@@ -133,31 +113,6 @@ contract Inbox is IInbox, Ownable, Semver {
     }
 
     /**
-     * @notice Makes solving public if currently restricted
-     * @dev Cannot be reversed once made public
-     */
-    function makeSolvingPublic() public onlyOwner {
-        if (!isSolvingPublic) {
-            isSolvingPublic = true;
-            emit SolvingIsPublic();
-        }
-    }
-
-    /**
-     * @notice Updates the solver whitelist
-     * @dev Whitelist is ignored if solving is public
-     * @param _solver Address of the solver
-     * @param _canSolve Whether solver should be whitelisted
-     */
-    function changeSolverWhitelist(
-        address _solver,
-        bool _canSolve
-    ) public onlyOwner {
-        solverWhitelist[_solver] = _canSolve;
-        emit SolverWhitelistChanged(_solver, _canSolve);
-    }
-
-    /**
      * @notice Internal function to fulfill intents
      * @dev Validates intent and executes calls
      * @param _route The route of the intent
@@ -175,10 +130,6 @@ contract Inbox is IInbox, Ownable, Semver {
     ) internal returns (bytes[] memory) {
         if (_route.destination != block.chainid) {
             revert WrongChain(_route.destination);
-        }
-
-        if (!isSolvingPublic && !solverWhitelist[msg.sender]) {
-            revert UnauthorizedSolveAttempt(msg.sender);
         }
 
         bytes32 routeHash = keccak256(abi.encode(_route));

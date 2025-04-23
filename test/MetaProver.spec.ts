@@ -42,9 +42,7 @@ describe('MetaProver Test', (): void => {
     ).deploy(ethers.ZeroAddress)
 
     // Deploy Inbox
-    const inbox = await (
-      await ethers.getContractFactory('Inbox')
-    ).deploy(owner.address, true, [])
+    const inbox = await (await ethers.getContractFactory('Inbox')).deploy()
 
     // Deploy Test ERC20 token
     const token = await (
