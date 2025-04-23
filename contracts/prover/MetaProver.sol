@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {IMessageRecipient} from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
+import {IMetalayerRecipient, ReadOperation} from "@metalayer/contracts/src/interfaces/IMetalayerRecipient.sol";
+import {FinalityState} from "@metalayer/contracts/src/lib/MetalayerMessage.sol";
 import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {MessageBridgeProver} from "./MessageBridgeProver.sol";
 import {Semver} from "../libs/Semver.sol";
-import {IMailbox, IPostDispatchHook} from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
+import {IMetalayerRouter} from "@metalayer/contracts/src/interfaces/IMetalayerRouter.sol";
 
 /**
- * @title HyperProver
- * @notice Prover implementation using Hyperlane's cross-chain messaging system
- * @dev Processes proof messages from Hyperlane mailbox and records proven intents
+ * @title MetaProver
+ * @notice Prover implementation using Caldera Metalayer's cross-chain messaging system
+ * @dev Processes proof messages from Metalayer router and records proven intents
  */
-contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
+contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
     using TypeCasts for bytes32;
+    using TypeCasts for address;
 
     /**
-     * @notice Constant indicating this contract uses Hyperlane for proving
+     * @notice Constant indicating this contract uses Metalayer for proving
      */
-    string public constant PROOF_TYPE = "Hyperlane";
+    string public constant PROOF_TYPE = "Metalayer";
 
     /**
      * @notice Emitted when attempting to prove an already-proven intent
@@ -28,7 +30,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
     event IntentAlreadyProven(bytes32 _intentHash);
 
     /**
-     * @notice Emitted when a batch of fulfilled intents is sent to the Hyperlane mailbox to be relayed to the source chain
+     * @notice Emitted when a batch of fulfilled intents is sent to the Metalayer router to be relayed to the source chain
      * @param _hashes the intent hashes sent in the batch
      * @param _sourceChainID ID of the source chain
      */
@@ -47,38 +49,39 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
     error UnauthorizedDestinationProve(address _sender);
 
     /**
-     * @notice Address of local Hyperlane mailbox
+     * @notice Address of local Metalayer router
      */
-    address public immutable MAILBOX;
+    address public immutable ROUTER;
 
     /**
-     * @notice Initializes the HyperProver contract
-     * @param _mailbox Address of local Hyperlane mailbox
+     * @notice Initializes the MetaProver contract
+     * @param _router Address of local Metalayer router
      * @param _inbox Address of Inbox contract
      * @param _provers Array of trusted provers to whitelist
      */
     constructor(
-        address _mailbox,
+        address _router,
         address _inbox,
         address[] memory _provers
     ) MessageBridgeProver(_inbox, _provers) {
-        MAILBOX = _mailbox;
+        ROUTER = _router;
     }
 
     /**
-     * @notice Handles incoming Hyperlane messages containing proof data
+     * @notice Handles incoming Metalayer messages containing proof data
      * @dev Processes batch updates to proven intents from valid sources
-     * param _origin Origin chain ID (unused but required by interface)
      * @param _sender Address that dispatched the message on source chain
-     * @param _messageBody Encoded array of intent hashes and claimants
+     * @param _message Encoded array of intent hashes and claimants
      */
     function handle(
         uint32,
         bytes32 _sender,
-        bytes calldata _messageBody
-    ) public payable {
-        // Verify message is from authorized mailbox
-        if (MAILBOX != msg.sender) {
+        bytes calldata _message,
+        ReadOperation[] calldata,
+        bytes[] calldata
+    ) external payable {
+        // Verify message is from authorized router
+        if (ROUTER != msg.sender) {
             revert UnauthorizedHandle(msg.sender);
         }
 
@@ -91,7 +94,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
 
         // Decode message containing intent hashes and claimants
         (bytes32[] memory hashes, address[] memory claimants) = abi.decode(
-            _messageBody,
+            _message,
             (bytes32[], address[])
         );
 
@@ -107,6 +110,14 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         }
     }
 
+    /**
+     * @notice Initiates proving of intents via Metalayer
+     * @dev Sends message to source chain prover with intent data
+     * @param _sourceChainId Chain ID of source chain
+     * @param _intentHashes Array of intent hashes to prove
+     * @param _claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     */
     function destinationProve(
         address _sender,
         uint256 _sourceChainId,
@@ -117,6 +128,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         if (msg.sender != INBOX) {
             revert UnauthorizedDestinationProve(msg.sender);
         }
+
         uint256 fee = fetchFee(
             _sourceChainId,
             _intentHashes,
@@ -131,25 +143,34 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
             revert NativeTransferFailed();
         }
 
-        emit BatchSent(_intentHashes, _sourceChainId);
-
         (
-            uint32 destinationDomain,
-            bytes32 recipientAddress,
-            bytes memory messageBody,
-            bytes memory metadata,
-            IPostDispatchHook hook
+            uint32 domain,
+            bytes32 recipient,
+            bytes memory message
         ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
-        IMailbox(MAILBOX).dispatch{value: msg.value}(
-            destinationDomain,
-            recipientAddress,
-            messageBody,
-            metadata,
-            hook
+        emit BatchSent(_intentHashes, _sourceChainId);
+
+        // Call Metalayer router's send message function
+        IMetalayerRouter(ROUTER).dispatch{value: msg.value}(
+            domain,
+            recipient,
+            new ReadOperation[](0),
+            message,
+            FinalityState.INSTANT,
+            200_000
         );
     }
 
+    /**
+     * @notice Fetches fee required for message dispatch
+     * @dev Queries Metalayer router for fee information
+     * @param _sourceChainId Chain ID of source chain
+     * @param _intentHashes Array of intent hashes to prove
+     * @param _claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     * @return Fee amount required for message dispatch
+     */
     function fetchFee(
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
@@ -157,26 +178,18 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         bytes calldata _data
     ) public view override returns (uint256) {
         (
-            uint32 destinationDomain,
-            bytes32 recipientAddress,
-            bytes memory messageBody,
-            bytes memory metadata,
-            IPostDispatchHook hook
+            uint32 domain,
+            bytes32 recipient,
+            bytes memory message
         ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
         return
-            IMailbox(MAILBOX).quoteDispatch(
-                destinationDomain,
-                recipientAddress,
-                messageBody,
-                metadata,
-                hook
-            );
+            IMetalayerRouter(ROUTER).quoteDispatch(domain, recipient, message);
     }
 
     /**
      * @notice Returns the proof type used by this prover
-     * @return ProofType indicating Hyperlane proving mechanism
+     * @return ProofType indicating Metalayer proving mechanism
      */
     function getProofType() external pure override returns (string memory) {
         return PROOF_TYPE;
@@ -189,27 +202,11 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         bytes calldata _data
     )
         internal
-        view
-        returns (
-            uint32 domain,
-            bytes32 recipient,
-            bytes memory message,
-            bytes memory metadata,
-            IPostDispatchHook hook
-        )
+        pure
+        returns (uint32 domain, bytes32 recipient, bytes memory message)
     {
         domain = uint32(_sourceChainId);
-        (
-            bytes32 _sourceChainProver,
-            bytes memory metadataDecoded,
-            address hookAddr
-        ) = abi.decode(_data, (bytes32, bytes, address));
-        recipient = _sourceChainProver;
+        recipient = abi.decode(_data, (bytes32));
         message = abi.encode(hashes, claimants);
-
-        metadata = metadataDecoded;
-        hook = (hookAddr == address(0))
-            ? IMailbox(MAILBOX).defaultHook()
-            : IPostDispatchHook(hookAddr);
     }
 }
