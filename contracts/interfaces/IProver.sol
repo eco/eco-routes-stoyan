@@ -11,6 +11,16 @@ import {ISemver} from "./ISemver.sol";
  */
 interface IProver is ISemver {
     /**
+     * @notice Types of proofs that can validate intent fulfillment
+     * @param Storage Traditional storage-based proof mechanism
+     * @param Hyperlane Proof using Hyperlane's cross-chain messaging
+     */
+    enum ProofType {
+        Storage,
+        Hyperlane
+    }
+
+    /**
      * @notice Emitted when an intent is successfully proven
      * @param _hash Hash of the proven intent
      * @param _claimant Address eligible to claim the intent's rewards
@@ -19,7 +29,16 @@ interface IProver is ISemver {
 
     /**
      * @notice Gets the proof mechanism type used by this prover
-     * @return string indicating the prover's mechanism
+     * @return ProofType enum indicating the prover's mechanism
      */
-    function getProofType() external pure returns (string memory);
+    function getProofType() external pure returns (ProofType);
+
+    /**
+     * @notice Gets the address eligible to claim rewards for a proven intent
+     * @param intentHash Hash of the intent to query
+     * @return Address of the claimant, or zero address if unproven
+     */
+    function getIntentClaimant(
+        bytes32 intentHash
+    ) external view returns (address);
 }

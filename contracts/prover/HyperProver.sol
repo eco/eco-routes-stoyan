@@ -3,22 +3,21 @@ pragma solidity ^0.8.26;
 
 import {IMessageRecipient} from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
-import {MessageBridgeProver} from "./MessageBridgeProver.sol";
+import {BaseProver} from "./BaseProver.sol";
 import {Semver} from "../libs/Semver.sol";
-import {IMailbox, IPostDispatchHook} from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
 
 /**
  * @title HyperProver
  * @notice Prover implementation using Hyperlane's cross-chain messaging system
  * @dev Processes proof messages from Hyperlane mailbox and records proven intents
  */
-contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
+contract HyperProver is IMessageRecipient, BaseProver, Semver {
     using TypeCasts for bytes32;
 
     /**
      * @notice Constant indicating this contract uses Hyperlane for proving
      */
-    string public constant PROOF_TYPE = "Hyperlane";
+    ProofType public constant PROOF_TYPE = ProofType.Hyperlane;
 
     /**
      * @notice Emitted when attempting to prove an already-proven intent
@@ -28,23 +27,16 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
     event IntentAlreadyProven(bytes32 _intentHash);
 
     /**
-     * @notice Emitted when a batch of fulfilled intents is sent to the Hyperlane mailbox to be relayed to the source chain
-     * @param _hashes the intent hashes sent in the batch
-     * @param _sourceChainID ID of the source chain
-     */
-    event BatchSent(bytes32[] indexed _hashes, uint256 indexed _sourceChainID);
-
-    /**
      * @notice Unauthorized call to handle() detected
      * @param _sender Address that attempted the call
      */
     error UnauthorizedHandle(address _sender);
 
     /**
-     * @notice Unauthorized call to initiate proving
-     * @param _sender Address that initiated
+     * @notice Unauthorized dispatch detected from source chain
+     * @param _sender Address that initiated the invalid dispatch
      */
-    error UnauthorizedDestinationProve(address _sender);
+    error UnauthorizedDispatch(address _sender);
 
     /**
      * @notice Address of local Hyperlane mailbox
@@ -52,17 +44,18 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
     address public immutable MAILBOX;
 
     /**
+     * @notice Address of Inbox contract (same across all chains via ERC-2470)
+     */
+    address public immutable INBOX;
+
+    /**
      * @notice Initializes the HyperProver contract
      * @param _mailbox Address of local Hyperlane mailbox
      * @param _inbox Address of Inbox contract
-     * @param _provers Array of trusted provers to whitelist
      */
-    constructor(
-        address _mailbox,
-        address _inbox,
-        address[] memory _provers
-    ) MessageBridgeProver(_inbox, _provers) {
+    constructor(address _mailbox, address _inbox) {
         MAILBOX = _mailbox;
+        INBOX = _inbox;
     }
 
     /**
@@ -82,11 +75,11 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
             revert UnauthorizedHandle(msg.sender);
         }
 
-        // Verify dispatch originated from valid destinationChain prover
+        // Verify dispatch originated from valid Inbox
         address sender = _sender.bytes32ToAddress();
 
-        if (!proverWhitelist[sender]) {
-            revert UnauthorizedDestinationProve(sender);
+        if (INBOX != sender) {
+            revert UnauthorizedDispatch(sender);
         }
 
         // Decode message containing intent hashes and claimants
@@ -107,109 +100,11 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         }
     }
 
-    function destinationProve(
-        address _sender,
-        uint256 _sourceChainId,
-        bytes32[] calldata _intentHashes,
-        address[] calldata _claimants,
-        bytes calldata _data
-    ) external payable override {
-        if (msg.sender != INBOX) {
-            revert UnauthorizedDestinationProve(msg.sender);
-        }
-        uint256 fee = fetchFee(
-            _sourceChainId,
-            _intentHashes,
-            _claimants,
-            _data
-        );
-        if (msg.value < fee) {
-            revert InsufficientFee(fee);
-        }
-        (bool success, ) = payable(_sender).call{value: msg.value - fee}("");
-        if (!success) {
-            revert NativeTransferFailed();
-        }
-
-        emit BatchSent(_intentHashes, _sourceChainId);
-
-        (
-            uint32 destinationDomain,
-            bytes32 recipientAddress,
-            bytes memory messageBody,
-            bytes memory metadata,
-            IPostDispatchHook hook
-        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
-
-        IMailbox(MAILBOX).dispatch{value: msg.value}(
-            destinationDomain,
-            recipientAddress,
-            messageBody,
-            metadata,
-            hook
-        );
-    }
-
-    function fetchFee(
-        uint256 _sourceChainId,
-        bytes32[] calldata _intentHashes,
-        address[] calldata _claimants,
-        bytes calldata _data
-    ) public view override returns (uint256) {
-        (
-            uint32 destinationDomain,
-            bytes32 recipientAddress,
-            bytes memory messageBody,
-            bytes memory metadata,
-            IPostDispatchHook hook
-        ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
-
-        return
-            IMailbox(MAILBOX).quoteDispatch(
-                destinationDomain,
-                recipientAddress,
-                messageBody,
-                metadata,
-                hook
-            );
-    }
-
     /**
      * @notice Returns the proof type used by this prover
      * @return ProofType indicating Hyperlane proving mechanism
      */
-    function getProofType() external pure override returns (string memory) {
+    function getProofType() external pure override returns (ProofType) {
         return PROOF_TYPE;
-    }
-
-    function processAndFormat(
-        uint256 _sourceChainId,
-        bytes32[] calldata hashes,
-        address[] calldata claimants,
-        bytes calldata _data
-    )
-        internal
-        view
-        returns (
-            uint32 domain,
-            bytes32 recipient,
-            bytes memory message,
-            bytes memory metadata,
-            IPostDispatchHook hook
-        )
-    {
-        domain = uint32(_sourceChainId);
-        (
-            bytes32 _sourceChainProver,
-            bytes memory metadataDecoded,
-            address hookAddr
-        ) = abi.decode(_data, (bytes32, bytes, address));
-        recipient = _sourceChainProver;
-        message = abi.encode(hashes, claimants);
-
-        metadata = metadataDecoded;
-        hook = (hookAddr == address(0))
-            ? IMailbox(MAILBOX).defaultHook()
-            : IPostDispatchHook(hookAddr);
     }
 }

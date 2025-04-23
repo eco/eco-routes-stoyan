@@ -104,8 +104,4 @@ contract TestMailbox {
     ) public pure returns (bytes32) {
         return bytes32(FEE);
     }
-
-    function defaultHook() public pure returns (IPostDispatchHook) {
-        return IPostDispatchHook(address(0));
-    }
 }

@@ -4,6 +4,10 @@ evm_version = "paris"
 src = "contracts"
 out = "out"
 libs = ["lib"]
+bytecode_hash = "none"
+cbor_metadata = false
 optimize = true
-runs = 1000000
+via-ir = true
+runs = 1000
+ffi = true
 fs_permissions = [{ access = "read-write", path = "./out"}]

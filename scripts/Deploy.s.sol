@@ -108,19 +108,16 @@ contract Deploy is Script {
             );
 
             console.log("Inbox :", ctx.inbox);
+
+            if (!wasInboxDeployed) {
+                // Set Hyperlane Mailbox contract address
+                Inbox(payable(ctx.inbox)).setMailbox(ctx.mailbox);
+            }
         }
 
         // Deploy HyperProver - using a code block to manage variable lifetimes
         {
-            // Initialize provers array properly with inbox address
-            address[] memory provers = new address[](1);
-            provers[0] = ctx.inbox;
-
-            ctx.hyperProverConstructorArgs = abi.encode(
-                ctx.mailbox,
-                ctx.inbox,
-                provers
-            );
+            ctx.hyperProverConstructorArgs = abi.encode(ctx.mailbox, ctx.inbox);
 
             bytes memory hyperProverBytecode = abi.encodePacked(
                 type(HyperProver).creationCode,
