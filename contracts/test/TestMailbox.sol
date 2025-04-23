@@ -5,6 +5,7 @@ pragma solidity ^0.8.26;
 import {IMessageRecipient} from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {IPostDispatchHook} from "@hyperlane-xyz/core/contracts/interfaces/hooks/IPostDispatchHook.sol";
+import {console} from "hardhat/console.sol";
 
 contract TestMailbox {
     using TypeCasts for bytes32;
@@ -35,31 +36,11 @@ contract TestMailbox {
     function dispatch(
         uint32 _destinationDomain,
         bytes32 _recipientAddress,
-        bytes calldata _messageBody
-    ) public payable returns (uint256) {
-        destinationDomain = _destinationDomain;
-        recipientAddress = _recipientAddress;
-        messageBody = _messageBody;
-        dispatched = true;
-
-        if (processor != address(0)) {
-            process(_messageBody);
-        }
-
-        if (msg.value < FEE) {
-            revert("no");
-        }
-
-        return (msg.value);
-    }
-
-    function dispatch(
-        uint32 _destinationDomain,
-        bytes32 _recipientAddress,
         bytes calldata _messageBody,
         bytes calldata _metadata,
         IPostDispatchHook _relayer
     ) public payable returns (uint256) {
+        console.log("d");
         destinationDomain = _destinationDomain;
         recipientAddress = _recipientAddress;
         messageBody = _messageBody;
@@ -80,6 +61,7 @@ contract TestMailbox {
     }
 
     function process(bytes calldata _msg) public {
+        console.logAddress(recipientAddress.bytes32ToAddress());
         IMessageRecipient(recipientAddress.bytes32ToAddress()).handle(
             uint32(block.chainid),
             msg.sender.addressToBytes32(),

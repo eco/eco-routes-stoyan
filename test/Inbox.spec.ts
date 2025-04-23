@@ -19,7 +19,7 @@ import {
 } from '../utils/intent'
 import { mock } from 'node:test'
 
-describe.only('Inbox Test', (): void => {
+describe('Inbox Test', (): void => {
   let inbox: Inbox
   let erc20: TestERC20
   let owner: SignerWithAddress
