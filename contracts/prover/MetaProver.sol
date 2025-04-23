@@ -152,7 +152,7 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         emit BatchSent(_intentHashes, _sourceChainId);
 
         // Call Metalayer router's send message function
-        IMetalayerRouter(ROUTER).dispatch{value: msg.value}(
+        IMetalayerRouter(ROUTER).dispatch{value: address(this).balance}(
             domain,
             recipient,
             new ReadOperation[](0),

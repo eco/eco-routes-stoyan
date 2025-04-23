@@ -9,7 +9,7 @@ import { HyperProver, Inbox, TestERC20, TestMailbox } from '../typechain-types'
 import { encodeTransfer } from '../utils/encode'
 import { hashIntent, TokenAmount } from '../utils/intent'
 
-describe.only('HyperProver Test', (): void => {
+describe('HyperProver Test', (): void => {
   let inbox: Inbox
   let mailbox: TestMailbox
   let hyperProver: HyperProver
