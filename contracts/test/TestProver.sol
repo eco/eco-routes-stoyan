@@ -5,7 +5,7 @@ pragma solidity ^0.8.26;
 import {BaseProver} from "../prover/BaseProver.sol";
 
 contract TestProver is BaseProver {
-    struct argsCheck {
+    struct ArgsCheck {
         address sender;
         uint256 sourceChainId;
         bytes data;
@@ -45,6 +45,5 @@ contract TestProver is BaseProver {
         });
         argIntentHashes = _intentHashes;
         argClaimants = _claimants;
-
     }
 }
