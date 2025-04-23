@@ -1,8 +1,8 @@
 /**
  * @file intent.ts
- * 
+ *
  * Intent-related utilities for Eco Routes protocol.
- * 
+ *
  * This file provides type-safe functions for encoding, decoding, and hashing
  * protocol intent structures. It extracts the necessary type information directly
  * from the contract ABI, ensuring that any contract changes that affect intent

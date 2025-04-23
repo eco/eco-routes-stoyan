@@ -3,7 +3,7 @@
  *
  * Responsible for building the TypeScript package for distribution to npm.
  * This process includes:
- * 
+ *
  * 1. Collecting Solidity ABIs and contract artifacts for TypeScript consumption
  * 2. Creating type-safe contract interfaces and address exports
  * 3. Formatting deployed addresses for different chains
@@ -61,7 +61,7 @@ interface AbiFile {
  * This is the main entry point for the package building process that orchestrates
  * all the steps needed to create a distributable npm package with contract ABIs,
  * addresses, and TypeScript definitions
- * 
+ *
  * @param context The semantic release context containing version and logging info
  */
 export async function buildPackage(context: SemanticContext): Promise<void> {
@@ -155,7 +155,13 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
 
     // Generates the deploy bytecode file
     const bytecodePath = path.join(buildDir, 'deployBytecode.json')
-    generateDeploymentFile([{ name: 'default', value: rootSalt }, { name: 'pre', value: preprodRootSalt }], bytecodePath)
+    generateDeploymentFile(
+      [
+        { name: 'default', value: rootSalt },
+        { name: 'pre', value: preprodRootSalt },
+      ],
+      bytecodePath,
+    )
 
     // Generate index.ts file
     generateIndexFile(deployedAddresses, buildDir, version, logger)
@@ -183,7 +189,7 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
  * Converts raw contract ABI JSON files into fully typed TypeScript modules
  * with proper typing for viem integration. Creates index files for easy imports
  * and removes the original JSON files to keep the package clean.
- * 
+ *
  * @param buildDir The directory to build in
  * @param logger The logger to use for output messages
  */
@@ -269,7 +275,7 @@ function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
  * Creates a human-readable CSV export of deployed contract addresses
  * by chain ID. This allows non-developers to easily access contract addresses
  * without parsing JSON or writing code.
- * 
+ *
  * @param addresses Object containing chain IDs and contract addresses
  * @param buildDir Directory to store the output CSV
  * @param logger The logger instance for output messages
@@ -313,7 +319,7 @@ function generateCsvFile(
  * Creates the TypeScript entry point with type-safe exports of all contract
  * addresses and helper functions. Includes TypeScript type definitions for
  * chain configurations and utility functions to access addresses by chain ID.
- * 
+ *
  * @param addresses Object containing chain IDs and contract addresses
  * @param buildDir Directory to store the output file
  * @param version Package version number to embed in the file
@@ -374,7 +380,7 @@ export function getContractAddress<T extends EcoChainIds>(
  * Utility function to find all files within a directory structure
  * maintaining relative paths, which is useful for copying contract source
  * files while preserving directory structure.
- * 
+ *
  * @param dir Directory to list files from
  * @returns Array of file paths relative to the provided directory
  */
@@ -385,10 +391,9 @@ function listFilesRecursively(dir: string): string[] {
   return helpers.listFilesRecursively(dir)
 }
 
-
 function copyOtherPackageFiles(
   buildDir: string,
-  context: SemanticContext
+  context: SemanticContext,
 ): void {
   const { nextRelease, logger, cwd } = context
 
@@ -416,7 +421,10 @@ function copyOtherPackageFiles(
   }
 
   // Create package.json for the build
-  setPublishingPackage({ logger, cwd, nextRelease }, PACKAGE.ROUTES_PACKAGE_NAME)
+  setPublishingPackage(
+    { logger, cwd, nextRelease },
+    PACKAGE.ROUTES_PACKAGE_NAME,
+  )
 }
 
 /**
@@ -425,7 +433,7 @@ function copyOtherPackageFiles(
  * with the right target settings, module type, and output directory.
  * This ensures the package is built with the correct settings for
  * compatibility with various JavaScript environments.
- * 
+ *
  * @param buildDir Directory to create the config in
  * @param logger The logger instance for output messages
  */
@@ -454,8 +462,10 @@ function createTsConfig(buildDir: string, logger: Logger): void {
   logger.log('Created tsconfig.json for the build')
 }
 
-
-export async function setPublishingPackage(context: SemanticContext, pubLib: typeof PACKAGE[keyof typeof PACKAGE]): Promise<void> {
+export async function setPublishingPackage(
+  context: SemanticContext,
+  pubLib: (typeof PACKAGE)[keyof typeof PACKAGE],
+): Promise<void> {
   const { logger, cwd, nextRelease } = context
 
   if (!nextRelease) {
@@ -475,32 +485,33 @@ export async function setPublishingPackage(context: SemanticContext, pubLib: typ
       main: 'dist/index.js',
       types: 'dist/index.d.ts',
     }
-    const diffs = pubLib === PACKAGE.ROUTES_PACKAGE_NAME ? {
-      name: PACKAGE.ROUTES_PACKAGE_NAME,
-      ...defaults,
-      files: [
-        'dist',
-        'src',
-        'deployAddresses.json',
-        'deployAddresses.csv',
-        'deployBytecode.json',
-        '!src/abi',
-        '!src/utils',
-        '!src/index.ts',
-      ],
-    }
-      :
-      {
-        name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
-        ...defaults,
-        files: [
-          'dist',
-          'deployAddresses.json',
-          'deployAddresses.csv',
-          'deployBytecode.json'
-        ],
-        dependencies: { viem: projectPackageJson.dependencies.viem }
-      }
+    const diffs =
+      pubLib === PACKAGE.ROUTES_PACKAGE_NAME
+        ? {
+            name: PACKAGE.ROUTES_PACKAGE_NAME,
+            ...defaults,
+            files: [
+              'dist',
+              'src',
+              'deployAddresses.json',
+              'deployAddresses.csv',
+              'deployBytecode.json',
+              '!src/abi',
+              '!src/utils',
+              '!src/index.ts',
+            ],
+          }
+        : {
+            name: PACKAGE.ROUTES_TS_PACKAGE_NAME,
+            ...defaults,
+            files: [
+              'dist',
+              'deployAddresses.json',
+              'deployAddresses.csv',
+              'deployBytecode.json',
+            ],
+            dependencies: { viem: projectPackageJson.dependencies.viem },
+          }
 
     // Modify package.json for TypeScript build
     // Change package name to add -ts suffix
@@ -516,7 +527,7 @@ export async function setPublishingPackage(context: SemanticContext, pubLib: typ
     // Write the modified package.json
     fs.writeFileSync(
       packageJsonPath,
-      JSON.stringify(projectPackageJson, null, 2)
+      JSON.stringify(projectPackageJson, null, 2),
     )
     logger.log('Created package.json for the build')
   }

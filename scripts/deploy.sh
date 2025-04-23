@@ -7,18 +7,19 @@ if [ -f .env ]; then
     set +a
 fi
 
-# Function to compute CREATE3 address and check if contract is already deployed
-check_create3_deployed() {
-    local create3_deployer=$1
+# Function to compute CREATE2 address and check if contract is already deployed
+check_create2_deployed() {
+    local createX_deployer=$1
     local salt=$2
-    local rpc_url=$3
-    local contract_name=$4
-    
+    local initCodeHash=$3
+    local rpc_url=$4
+    local contract_name=$5
+
     # Call the CreateX deployer to compute the deterministic address
-    # Using computeCreate3Address function as per https://github.com/pcaversaccio/createx
-    echo "🧮 Computing CREATE3 address for $contract_name..."
-    local predicted_address=$(cast call "$create3_deployer" "computeCreate3Address(bytes32)(address)" "$salt" --rpc-url "$rpc_url")
-    
+    # Using computeCreate2Address function as per https://github.com/pcaversaccio/createx
+    echo "🧮 Computing CREATE2 address for $contract_name..."
+    local predicted_address=$(cast call "$createX_deployer" "computeCreate2Address(bytes32,bytes32)(address)" "$salt" "$initCodeHash" --rpc-url "$rpc_url")
+
     if [ $? -ne 0 ]; then
         echo "⚠️ Failed to compute CREATE3 address. The deployer might not support this function."
         return 1
@@ -87,11 +88,18 @@ for ENV_KEY in $ROOT_KEYS; do
     echo "📜 Contracts to deploy: $CONTRACT_KEYS"
 
      # Extract the CREATE3 Deployer address from the bytecode file                                                                                 
-      CREATE3_DEPLOYER_ADDRESS=$(jq -r ".[\"$ENV_KEY\"].createXDeployerAddress" "$BYTECODE_FILE")                                            
-      if [[ "$CREATE3_DEPLOYER_ADDRESS" == "null" || -z "$CREATE3_DEPLOYER_ADDRESS" ]]; then                                                 
+      CREATEX_DEPLOYER_ADDRESS=$(jq -r ".[\"$ENV_KEY\"].createXDeployerAddress" "$BYTECODE_FILE")                                            
+      if [[ "$CREATEX_DEPLOYER_ADDRESS" == "null" || -z "$CREATEX_DEPLOYER_ADDRESS" ]]; then                                                 
           echo "❌ Error: No createXDeployerAddress found for environment $ENV_KEY. Using default deployment method."                      
           exit 1
       fi
+
+       SALT=$(jq -r ".[\"$ENV_KEY\"].salt" "$BYTECODE_FILE")
+            if [[ "$SALT" == "null" || -z "$SALT" ]]; then
+                echo "❌ Error: Salt not set for contract $CONTRACT_NAME"
+                exit 1
+            fi
+            echo "🔑 Using salt: $SALT"
 
     # Process each chain from the deployment JSON data
     echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
@@ -129,18 +137,15 @@ for ENV_KEY in $ROOT_KEYS; do
                 echo "⚠️ Warning: No bytecode found for $CONTRACT_NAME. Skipping..."
                 continue
             fi
-            
-            # Get the salt for this deployment, we dont implement any guarded salt behavior here, so we need to hash it
-            # https://github.com/pcaversaccio/createx/blob/main/src/CreateX.sol#L910
-            SALT=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].keccakedSalt" "$BYTECODE_FILE")
-            if [[ "$SALT" == "null" || -z "$SALT" ]]; then
-                echo "❌ Error: Salt not set for contract $CONTRACT_NAME"
+
+            INIT_CODE_HASH=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].initCodeHash" "$BYTECODE_FILE")
+            if [[ "$INIT_CODE_HASH" == "null" || -z "$INIT_CODE_HASH" ]]; then
+                echo "❌ Error: initCodeHash not set for contract $CONTRACT_NAME"
                 exit 1
             fi
-            echo "🔑 Using salt: $SALT"
-            
+
             # Check if contract is already deployed using CREATE3
-            if check_create3_deployed "$CREATE3_DEPLOYER_ADDRESS" "$SALT" "$RPC_URL" "$CONTRACT_NAME"; then
+            if check_create2_deployed "$CREATEX_DEPLOYER_ADDRESS" "$SALT" "$INIT_CODE_HASH" "$RPC_URL" "$CONTRACT_NAME"; then
                     echo " ⏭️ Skipping deployment for $CONTRACT_NAME as it's already deployed"
                     continue
             fi
@@ -149,9 +154,9 @@ for ENV_KEY in $ROOT_KEYS; do
             TEMP_BYTECODE_FILE=$(mktemp)
             echo "$BYTECODE" > "$TEMP_BYTECODE_FILE"
             # Deploy using cast with bytecode from file
-            FOUNDRY_CMD="cast send \"$CREATE3_DEPLOYER_ADDRESS\" \"$(cat $TEMP_BYTECODE_FILE)\" --private-key \"$PRIVATE_KEY\" --rpc-url \"$RPC_URL\"" 
+            FOUNDRY_CMD="cast send \"$CREATEX_DEPLOYER_ADDRESS\" \"$(cat $TEMP_BYTECODE_FILE)\" --private-key \"$PRIVATE_KEY\" --rpc-url \"$RPC_URL\"" 
             echo "Executing command: FOUNDRY_CMD"
-            eval $FOUNDRY_CMD
+            echo $FOUNDRY_CMD
             DEPLOY_EXIT_CODE=$?
             # Clean up temp file                                                                                                                  │ │
             rm "$TEMP_BYTECODE_FILE"  

@@ -67,11 +67,11 @@ export async function deployRoutesContracts(
   const { nextRelease, logger, cwd } = context
   try {
     // Clean up existing build directory if it exists
-    const buildDir = getBuildDirPath(cwd);
+    const buildDir = getBuildDirPath(cwd)
     if (fs.existsSync(buildDir)) {
-      logger.log(`Deleting existing build directory: ${buildDir}`);
-      fs.rmSync(buildDir, { recursive: true, force: true });
-      logger.log('Build directory deleted successfully');
+      logger.log(`Deleting existing build directory: ${buildDir}`)
+      fs.rmSync(buildDir, { recursive: true, force: true })
+      logger.log('Build directory deleted successfully')
     }
 
     // Determine salts based on version

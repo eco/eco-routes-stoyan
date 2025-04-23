@@ -40,7 +40,9 @@ export async function publish(
   const { nextRelease, logger, cwd } = context
   const dryRun = !shouldWePublish(nextRelease?.version || '')
   if (dryRun) {
-    logger.log(`DRY RUN: Skipping actual npm publish. Would have published packages to npm.`)
+    logger.log(
+      `DRY RUN: Skipping actual npm publish. Would have published packages to npm.`,
+    )
   }
 
   try {
@@ -54,7 +56,10 @@ export async function publish(
     // Get directory paths
     const buildDir = getBuildDirPath(cwd)
 
-    for (const packageName of [PACKAGE.ROUTES_PACKAGE_NAME, PACKAGE.ROUTES_TS_PACKAGE_NAME]) {
+    for (const packageName of [
+      PACKAGE.ROUTES_PACKAGE_NAME,
+      PACKAGE.ROUTES_TS_PACKAGE_NAME,
+    ]) {
       logger.log(`Publishing package: ${packageName}@${version}`)
       setPublishingPackage(context, packageName)
       // Ensure the dist directory exists after compilation
@@ -64,23 +69,24 @@ export async function publish(
           `Compilation failed: dist directory not found at ${distDirPath}`,
         )
       }
-      
+
       if (!dryRun) {
         // Actual publishing in non-dry-run mode
         const result = await execPromise(`yarn publish --tag ${tag}`, {
           cwd: getBuildDirPath(cwd),
           env: {
-            ...process.env
-          }
+            ...process.env,
+          },
         })
         logger.log(result.stdout)
         logger.log(`Package ${packageName}@${version} published successfully`)
       } else {
         // Just log in dry-run mode
         logger.log(`DRY RUN: Not really publishing: ${packageName}@${version}`)
-        logger.log(`Package ${packageName}@${version} would be published successfully`)
+        logger.log(
+          `Package ${packageName}@${version} would be published successfully`,
+        )
       }
-
     }
   } catch (error) {
     logger.error('❌ Package publish failed')
@@ -91,7 +97,7 @@ export async function publish(
 
 /**
  * Determines whether packages should be published based on environment variables
- * 
+ *
  * @param version - The version being published
  * @returns Boolean indicating whether to publish packages
  */

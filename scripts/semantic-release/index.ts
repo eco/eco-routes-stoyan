@@ -27,7 +27,7 @@ import { publish } from './sr-publish'
 module.exports = {
   // Plugin name helps with debugging and logging
   name: 'eco-routes-semantic-release-plugin',
-  
+
   // Semantic Release configuration, including the versioning strategy
   // this means to rely on the npm version for versioning not the git tags
   npmPublish: true,

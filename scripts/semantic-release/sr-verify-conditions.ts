@@ -4,13 +4,13 @@
  * Implements the verifyConditions step in the semantic-release lifecycle.
  * This is the first step that runs in the process and ensures all prerequisites
  * are met before attempting a release.
- * 
+ *
  * The verification process includes:
  * - Checking environment variables for deployment credentials
  * - Validating package.json and its fields
  * - Ensuring the new version is valid and greater than existing versions
  * - Verifying npm publishing credentials
- * 
+ *
  * If any verification fails, the release process is aborted with a clear error message.
  */
 

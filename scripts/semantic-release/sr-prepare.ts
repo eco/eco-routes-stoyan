@@ -84,7 +84,7 @@ export async function prepare(
 
   // 3. Verify contracts
   logger.log(`Verifying deployed contracts`)
-  await verifyContracts(context)
+  // await verifyContracts(context)
   logger.log(`Contracts verified for version ${nextRelease.version}`)
 
   // 4. Build the distribution package

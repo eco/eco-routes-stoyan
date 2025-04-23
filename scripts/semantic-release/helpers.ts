@@ -126,5 +126,7 @@ export function isValidVersion(version: string): boolean {
  * @returns
  */
 export function getPackageInfo(directoryPath: string): Record<string, any> {
-  return JSON.parse(fs.readFileSync(path.join(directoryPath, 'package.json'), 'utf-8'))
+  return JSON.parse(
+    fs.readFileSync(path.join(directoryPath, 'package.json'), 'utf-8'),
+  )
 }

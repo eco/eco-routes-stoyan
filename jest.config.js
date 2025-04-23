@@ -6,5 +6,5 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {}],
   },
-  passWithNoTests: true
+  passWithNoTests: true,
 }

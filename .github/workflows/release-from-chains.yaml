@@ -93,7 +93,7 @@ jobs:
         uses: borales/actions-yarn@v5
         with:
           cmd: build
-      
+
       - name: Build the semantic-release plugin
         uses: borales/actions-yarn@v5
         with:

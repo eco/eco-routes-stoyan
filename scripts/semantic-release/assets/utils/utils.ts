@@ -1,6 +1,6 @@
 /**
  * @file utils.ts
- * 
+ *
  * Utility functions for working with Solidity ABI structures in TypeScript.
  * Provides tools to extract, parse, and manipulate ABI definitions for type-safe
  * interaction with smart contracts.
@@ -10,10 +10,10 @@ import { Abi, AbiParameter } from 'viem'
 
 /**
  * Extracts the ABI struct definition with the given name from a contract ABI
- * 
+ *
  * This function enables type-safe extraction of Solidity struct definitions from
  * contract ABIs, which is essential for encoding and decoding complex data structures.
- * 
+ *
  * @param abi - The contract ABI containing the struct definition
  * @param structName - The name of the struct to extract
  * @returns The struct component definition with proper typing

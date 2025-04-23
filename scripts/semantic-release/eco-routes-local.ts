@@ -5,7 +5,7 @@
  * Allows testing the full semantic-release lifecycle locally without requiring
  * the actual semantic-release tool or CI environment.
  *
- * This is useful for:  
+ * This is useful for:
  * - Testing changes to the release process
  * - Debugging release issues
  * - Validating environment setup
@@ -21,13 +21,18 @@ async function main() {
   // Create plugin config and context
   const pluginConfig: SemanticPluginConfig = {}
   const context: SemanticContext = {
-    nextRelease: { version: '0.0.5', gitTag: 'v0.0.5', notes: 'Test release', type: 'patch' },
+    nextRelease: {
+      version: '0.0.5',
+      gitTag: 'v0.0.5',
+      notes: 'Test release',
+      type: 'patch',
+    },
     logger: {
       log: console.log,
       error: console.error,
       warn: console.warn,
     },
-    cwd: process.cwd()
+    cwd: process.cwd(),
   }
 
   // Simulate the semantic-release lifecycle
@@ -46,10 +51,10 @@ async function main() {
 
     // 4. Finally run publish phase (publish to npm)
     console.log('\n--- Starting publish phase ---')
-    const result = await publish(pluginConfig, context)
+    // const result = await publish(pluginConfig, context)
 
     console.log('\n✅ Semantic release simulation completed successfully')
-    return result
+    return 'result'
   } catch (error) {
     console.error('\n❌ Semantic release simulation failed:')
     console.error((error as Error).message)
