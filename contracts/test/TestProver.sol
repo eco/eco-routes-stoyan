@@ -8,13 +8,13 @@ contract TestProver is BaseProver {
     struct argsCheck {
         address sender;
         uint256 sourceChainId;
-        bytes32[] intentHashes;
-        address[] claimants;
         bytes data;
         uint256 value;
     }
 
     argsCheck public args;
+    bytes32[] public argIntentHashes;
+    address[] public argClaimants;
 
     constructor(address _inbox) BaseProver(_inbox) {}
 
@@ -40,10 +40,11 @@ contract TestProver is BaseProver {
         args = argsCheck({
             sender: _sender,
             sourceChainId: _sourceChainId,
-            intentHashes: _intentHashes,
-            claimants: _claimants,
             data: _data,
             value: msg.value
         });
+        argIntentHashes = _intentHashes;
+        argClaimants = _claimants;
+
     }
 }
