@@ -12,7 +12,7 @@ contract TestProver is BaseProver {
         uint256 value;
     }
 
-    argsCheck public args;
+    ArgsCheck public args;
     bytes32[] public argIntentHashes;
     address[] public argClaimants;
 
@@ -37,7 +37,7 @@ contract TestProver is BaseProver {
         address[] calldata _claimants,
         bytes calldata _data
     ) external payable override {
-        args = argsCheck({
+        args = ArgsCheck({
             sender: _sender,
             sourceChainId: _sourceChainId,
             data: _data,
