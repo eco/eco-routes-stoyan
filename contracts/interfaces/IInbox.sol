@@ -27,33 +27,6 @@ interface IInbox is ISemver {
     );
 
     /**
-     * @notice Emitted when intent solving is made public
-     */
-    event SolvingIsPublic();
-
-    /**
-     * @notice Emitted when Hyperlane mailbox address is set
-     * @param _mailbox Address of the mailbox contract
-     */
-    event MailboxSet(address indexed _mailbox);
-
-    /**
-     * @notice Emitted when solver whitelist status changes
-     * @param _solver Address of the solver
-     * @param _canSolve Updated whitelist status
-     */
-    event SolverWhitelistChanged(
-        address indexed _solver,
-        bool indexed _canSolve
-    );
-
-    /**
-     * @notice Unauthorized solver attempted to fulfill intent
-     * @param _solver Address of the unauthorized solver
-     */
-    error UnauthorizedSolveAttempt(address _solver);
-
-    /**
      * @notice Thrown when an attempt is made to fulfill an intent on the wrong destination chain
      * @param _chainID Chain ID of the destination chain on which this intent should be fulfilled
      */
@@ -149,20 +122,4 @@ interface IInbox is ISemver {
         address _localProver,
         bytes calldata _data
     ) external payable returns (bytes[] memory);
-
-    // /**
-    //  * @notice initiates proving of a batch of fulfilled intents
-    //  * @dev Intent hashes must correspond to fulfilled intents from specified source chain
-    //  * @param _sourceChainID Chain ID of the source chain
-    //  * @param _intentHashes Hashes of the intents to be proven
-    //  * @param _localProver Address of prover on the destination chain
-    //  * @param _sourceChainProver Address of prover on the source chain
-    //  */
-    // function sendFulfilled(
-    //     uint256 _sourceChainID,
-    //     bytes32[] calldata _intentHashes,
-    //     address _localProver,
-    //     address _sourceChainProver,
-    //     bytes calldata _data
-    // ) external payable;
 }

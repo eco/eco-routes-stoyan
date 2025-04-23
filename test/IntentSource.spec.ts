@@ -61,9 +61,7 @@ describe('Intent Source Test', (): void => {
 
     const intentSourceFactory = await ethers.getContractFactory('IntentSource')
     const intentSource = await intentSourceFactory.deploy()
-    inbox = await (
-      await ethers.getContractFactory('Inbox')
-    ).deploy(owner.address, false, [owner.address])
+    inbox = await (await ethers.getContractFactory('Inbox')).deploy()
 
     // deploy prover
     prover = await (
