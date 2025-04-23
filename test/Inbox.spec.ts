@@ -465,7 +465,48 @@ describe.only('Inbox Test', (): void => {
     })
   })
 
-  describe.only('initiateProving', async () => {
+  describe('fulfillAndProve', async () => {
+    it('works', async () => {
+      expect(await inbox.solverWhitelist(solver)).to.be.true
+
+      await erc20.connect(solver).approve(await inbox.getAddress(), mintAmount)
+
+      const theArgs = [
+        '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        123n,
+        intentHash,
+        123456789n,
+      ]
+
+      expect(await mockProver.args()).to.not.deep.equal(theArgs)
+
+      await expect(
+        inbox
+          .connect(solver)
+          .fulfillAndProve(
+            route,
+            rewardHash,
+            dstAddr.address,
+            intentHash,
+            await mockProver.getAddress(),
+            intentHash,
+          ),
+      ).to.not.be.reverted
+
+      await inbox
+        .connect(solver)
+        .initiateProving(
+          route.source,
+          [intentHash],
+          await mockProver.getAddress(),
+          intentHash,
+          { value: 123456789 },
+        )
+      expect(await mockProver.args()).to.deep.equal(theArgs)
+    })
+  })
+
+  describe('initiateProving', async () => {
     it('gets the right args', async () => {
       expect(await inbox.solverWhitelist(solver)).to.be.true
 
@@ -474,7 +515,7 @@ describe.only('Inbox Test', (): void => {
       const theArgs = [
         '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
         123n,
-        'intenthash',
+        intentHash,
         123456789n,
       ]
       await expect(
@@ -501,7 +542,6 @@ describe.only('Inbox Test', (): void => {
           { value: 123456789 },
         )
       expect(await mockProver.args()).to.deep.equal(theArgs)
-      console.log(await mockProver.args())
     })
   })
 
