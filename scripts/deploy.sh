@@ -21,7 +21,7 @@ check_create2_deployed() {
     local predicted_address=$(cast call "$createX_deployer" "computeCreate2Address(bytes32,bytes32)(address)" "$salt" "$initCodeHash" --rpc-url "$rpc_url")
 
     if [ $? -ne 0 ]; then
-        echo "⚠️ Failed to compute CREATE3 address. The deployer might not support this function."
+        echo "⚠️ Failed to compute CREATE2 address. The deployer might not support this function."
         return 1
     fi
     
@@ -94,12 +94,12 @@ for ENV_KEY in $ROOT_KEYS; do
           exit 1
       fi
 
-       SALT=$(jq -r ".[\"$ENV_KEY\"].salt" "$BYTECODE_FILE")
-            if [[ "$SALT" == "null" || -z "$SALT" ]]; then
-                echo "❌ Error: Salt not set for contract $CONTRACT_NAME"
+       KECCAK_SALT=$(jq -r ".[\"$ENV_KEY\"].keccakSalt" "$BYTECODE_FILE")
+            if [[ "$KECCAK_SALT" == "null" || -z "$KECCAK_SALT" ]]; then
+                echo "❌ Error: Salt not set for environment $ENV_KEY. Please set it in the bytecode file."
                 exit 1
             fi
-            echo "🔑 Using salt: $SALT"
+            echo "🔑 Using salt: $KECCAK_SALT"
 
     # Process each chain from the deployment JSON data
     echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
@@ -145,7 +145,7 @@ for ENV_KEY in $ROOT_KEYS; do
             fi
 
             # Check if contract is already deployed using CREATE3
-            if check_create2_deployed "$CREATEX_DEPLOYER_ADDRESS" "$SALT" "$INIT_CODE_HASH" "$RPC_URL" "$CONTRACT_NAME"; then
+            if check_create2_deployed "$CREATEX_DEPLOYER_ADDRESS" "$KECCAK_SALT" "$INIT_CODE_HASH" "$RPC_URL" "$CONTRACT_NAME"; then
                     echo " ⏭️ Skipping deployment for $CONTRACT_NAME as it's already deployed"
                     continue
             fi
@@ -156,7 +156,7 @@ for ENV_KEY in $ROOT_KEYS; do
             # Deploy using cast with bytecode from file
             FOUNDRY_CMD="cast send \"$CREATEX_DEPLOYER_ADDRESS\" \"$(cat $TEMP_BYTECODE_FILE)\" --private-key \"$PRIVATE_KEY\" --rpc-url \"$RPC_URL\"" 
             echo "Executing command: FOUNDRY_CMD"
-            echo $FOUNDRY_CMD
+            eval $FOUNDRY_CMD
             DEPLOY_EXIT_CODE=$?
             # Clean up temp file                                                                                                                  │ │
             rm "$TEMP_BYTECODE_FILE"  

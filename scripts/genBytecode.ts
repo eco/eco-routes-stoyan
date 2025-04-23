@@ -118,6 +118,7 @@ export function generateMultipleDeploymentData(salt: Hex): Record<string, any> {
   const deploymentData: Record<string, any> = {
     createXDeployerAddress: CREATE_X_DEPLOYER_ADDRESS,
     salt,
+    keccakSalt: keccak256(salt),
     contracts: {},
   }
 
