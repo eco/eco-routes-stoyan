@@ -136,7 +136,10 @@ describe('MetaProver Test', (): void => {
             [],
             [],
           ),
-      ).to.be.revertedWithCustomError(metaProver, 'UnauthorizedInitiateProving')
+      ).to.be.revertedWithCustomError(
+        metaProver,
+        'UnauthorizedDestinationProve',
+      )
     })
 
     it('should record a single proven intent when called correctly', async () => {
@@ -238,9 +241,9 @@ describe('MetaProver Test', (): void => {
     })
   })
 
-  describe('3. InitiateProving', () => {
+  describe('3. DestinationProve', () => {
     beforeEach(async () => {
-      // Use owner as inbox so we can test initiateProving
+      // Use owner as inbox so we can test DestinationProve
       metaProver = await (
         await ethers.getContractFactory('MetaProver')
       ).deploy(await testRouter.getAddress(), owner.address, [
@@ -248,7 +251,7 @@ describe('MetaProver Test', (): void => {
       ])
     })
 
-    it('should reject initiateProving from unauthorized source', async () => {
+    it('should reject DestinationProve from unauthorized source', async () => {
       const intentHashes = [ethers.keccak256('0x1234')]
       const claimants = [await claimant.getAddress()]
       const sourceChainProver = await solver.getAddress()
@@ -257,17 +260,41 @@ describe('MetaProver Test', (): void => {
       await expect(
         metaProver
           .connect(solver)
-          .initiateProving(
+          .destinationProve(
+            owner.address,
             123,
             intentHashes,
             claimants,
             sourceChainProver,
             data,
           ),
-      ).to.be.revertedWithCustomError(metaProver, 'UnauthorizedInitiateProving')
+      ).to.be.revertedWithCustomError(
+        metaProver,
+        'UnauthorizedDestinationProve',
+      )
     })
 
-    it('should correctly call dispatch in the initiateProving method', async () => {
+    it('should correctly get fee via fetchFee', async () => {
+        const sourceChainId = 123
+        const intentHashes = [ethers.keccak256('0x1234')]
+        const claimants = [await claimant.getAddress()]
+        const sourceChainProver = await solver.getAddress()
+        const data = '0x'
+  
+        // Call fetchFee
+        const fee = await metaProver.fetchFee(
+          sourceChainId,
+          intentHashes,
+          claimants,
+          sourceChainProver,
+          data,
+        )
+  
+        // Verify we get the expected fee amount
+        expect(fee).to.equal(await testRouter.FEE())
+      })
+
+    it('should correctly call dispatch in the DestinationProve method', async () => {
       // Set up test data
       const sourceChainId = 123
       const intentHashes = [ethers.keccak256('0x1234')]
@@ -275,11 +302,11 @@ describe('MetaProver Test', (): void => {
       const sourceChainProver = await solver.getAddress()
       const data = '0x'
 
-      // Before initiateProving, make sure the router hasn't been called
+      // Before DestinationProve, make sure the router hasn't been called
       expect(await testRouter.dispatched()).to.be.false
 
       await expect(
-        metaProver.connect(owner).initiateProving(
+        metaProver.connect(owner).destinationProve(
           sourceChainId,
           intentHashes,
           claimants,
@@ -310,26 +337,6 @@ describe('MetaProver Test', (): void => {
         [intentHashes, claimants],
       )
       expect(await testRouter.messageBody()).to.eq(expectedBody)
-    })
-
-    it('should correctly get fee via fetchFee', async () => {
-      const sourceChainId = 123
-      const intentHashes = [ethers.keccak256('0x1234')]
-      const claimants = [await claimant.getAddress()]
-      const sourceChainProver = await solver.getAddress()
-      const data = '0x'
-
-      // Call fetchFee
-      const fee = await metaProver.fetchFee(
-        sourceChainId,
-        intentHashes,
-        claimants,
-        sourceChainProver,
-        data,
-      )
-
-      // Verify we get the expected fee amount
-      expect(fee).to.equal(await testRouter.FEE())
     })
   })
 

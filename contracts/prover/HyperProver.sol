@@ -6,6 +6,7 @@ import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {MessageBridgeProver} from "./MessageBridgeProver.sol";
 import {Semver} from "../libs/Semver.sol";
 import {IMailbox, IPostDispatchHook} from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
+import {console} from "hardhat/console.sol";
 
 /**
  * @title HyperProver
@@ -141,7 +142,7 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
             IPostDispatchHook hook
         ) = processAndFormat(_sourceChainId, _intentHashes, _claimants, _data);
 
-        IMailbox(MAILBOX).dispatch{value: msg.value}(
+        IMailbox(MAILBOX).dispatch{value: address(this).balance}(
             destinationDomain,
             recipientAddress,
             messageBody,
