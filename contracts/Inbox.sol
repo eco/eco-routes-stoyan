@@ -27,9 +27,6 @@ contract Inbox is IInbox, Semver {
     // Mapping of intent hashes to their claimant address
     mapping(bytes32 => address) public fulfilled;
 
-    // Is solving public
-    bool public isSolvingPublic;
-
     constructor() {}
 
     /**
