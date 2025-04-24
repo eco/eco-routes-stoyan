@@ -276,6 +276,126 @@ describe('HyperProver Test', (): void => {
         'UnauthorizedDestinationProve',
       )
     })
+    
+    it('should handle exact fee payment with no refund needed', async () => {
+      // Set up test data
+      const sourceChainId = 123
+      const intentHashes = [ethers.keccak256('0x1234')]
+      const claimants = [await claimant.getAddress()]
+      const sourceChainProver = await hyperProver.getAddress()
+      const metadata = '0x1234'
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'bytes', 'address'],
+        [
+          ethers.zeroPadValue(sourceChainProver, 32),
+          metadata,
+          ethers.ZeroAddress,
+        ],
+      )
+
+      const fee = await hyperProver.fetchFee(
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+      )
+      
+      // Track balances before and after
+      const solverBalanceBefore = await solver.provider.getBalance(solver.address)
+      
+      // Call with exact fee (no refund needed)
+      await hyperProver.connect(owner).destinationProve(
+        solver.address,
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+        { value: fee }, // Exact fee amount
+      )
+      
+      // Should dispatch successfully without refund
+      expect(await mailbox.dispatchedWithRelayer()).to.be.true
+      
+      // Balance should be unchanged since no refund was needed
+      const solverBalanceAfter = await solver.provider.getBalance(solver.address)
+      expect(solverBalanceBefore).to.equal(solverBalanceAfter)
+    })
+    
+    it('should handle custom hook address correctly', async () => {
+      // Set up test data
+      const sourceChainId = 123
+      const intentHashes = [ethers.keccak256('0x1234')]
+      const claimants = [await claimant.getAddress()]
+      const sourceChainProver = await hyperProver.getAddress()
+      const metadata = '0x1234'
+      const customHookAddress = await solver.getAddress() // Use solver as custom hook for testing
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'bytes', 'address'],
+        [
+          ethers.zeroPadValue(sourceChainProver, 32),
+          metadata,
+          customHookAddress,
+        ],
+      )
+
+      const fee = await hyperProver.fetchFee(
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+      )
+      
+      // Call with custom hook
+      await hyperProver.connect(owner).destinationProve(
+        solver.address,
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+        { value: fee },
+      )
+      
+      // Verify dispatch was called (we can't directly check hook address as 
+      // TestMailbox doesn't expose that property)
+      expect(await mailbox.dispatchedWithRelayer()).to.be.true
+    })
+    
+    it('should handle empty arrays gracefully', async () => {
+      // Set up test data with empty arrays
+      const sourceChainId = 123
+      const intentHashes: string[] = []
+      const claimants: string[] = []
+      const sourceChainProver = await hyperProver.getAddress()
+      const metadata = '0x1234'
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'bytes', 'address'],
+        [
+          ethers.zeroPadValue(sourceChainProver, 32),
+          metadata,
+          ethers.ZeroAddress,
+        ],
+      )
+
+      const fee = await hyperProver.fetchFee(
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+      )
+      
+      // Should process empty arrays without error
+      await expect(hyperProver.connect(owner).destinationProve(
+        solver.address,
+        sourceChainId,
+        intentHashes,
+        claimants,
+        data,
+        { value: fee },
+      )).to.not.be.reverted
+      
+      // Should dispatch successfully
+      expect(await mailbox.dispatchedWithRelayer()).to.be.true
+    })
 
     it('should correctly format parameters in processAndFormat via fetchFee', async () => {
       // Since processAndFormat is internal, we'll test through fetchFee

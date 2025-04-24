@@ -23,32 +23,6 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
     string public constant PROOF_TYPE = "Metalayer";
 
     /**
-     * @notice Emitted when attempting to prove an already-proven intent
-     * @dev Event instead of error to allow batch processing to continue
-     * @param _intentHash Hash of the already proven intent
-     */
-    event IntentAlreadyProven(bytes32 _intentHash);
-
-    /**
-     * @notice Emitted when a batch of fulfilled intents is sent to the Metalayer router to be relayed to the source chain
-     * @param _hashes the intent hashes sent in the batch
-     * @param _sourceChainID ID of the source chain
-     */
-    event BatchSent(bytes32[] indexed _hashes, uint256 indexed _sourceChainID);
-
-    /**
-     * @notice Unauthorized call to handle() detected
-     * @param _sender Address that attempted the call
-     */
-    error UnauthorizedHandle(address _sender);
-
-    /**
-     * @notice Unauthorized call to initiate proving
-     * @param _sender Address that initiated
-     */
-    error UnauthorizedDestinationProve(address _sender);
-
-    /**
      * @notice Address of local Metalayer router
      */
     address public immutable ROUTER;
@@ -81,13 +55,10 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         bytes[] calldata
     ) external payable {
         // Verify message is from authorized router
-        if (ROUTER != msg.sender) {
-            revert UnauthorizedHandle(msg.sender);
-        }
+        _validateMessageSender(msg.sender, ROUTER);
 
         // Verify dispatch originated from valid destinationChain prover
         address sender = _sender.bytes32ToAddress();
-
         if (!proverWhitelist[sender]) {
             revert UnauthorizedDestinationProve(sender);
         }
@@ -98,16 +69,8 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
             (bytes32[], address[])
         );
 
-        // Process each intent proof
-        for (uint256 i = 0; i < hashes.length; i++) {
-            (bytes32 intentHash, address claimant) = (hashes[i], claimants[i]);
-            if (provenIntents[intentHash] != address(0)) {
-                emit IntentAlreadyProven(intentHash);
-            } else {
-                provenIntents[intentHash] = claimant;
-                emit IntentProven(intentHash, claimant);
-            }
-        }
+        // Process intent proofs using shared implementation
+        _processIntentProofs(hashes, claimants);
     }
 
     /**
@@ -126,24 +89,14 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         address[] calldata _claimants,
         bytes calldata _data
     ) external payable override {
-        if (msg.sender != INBOX) {
-            revert UnauthorizedDestinationProve(msg.sender);
-        }
+        // Validate the request is from Inbox
+        _validateProvingRequest(msg.sender);
 
-        uint256 fee = fetchFee(
-            _sourceChainId,
-            _intentHashes,
-            _claimants,
-            _data
-        );
-        if (msg.value < fee) {
-            revert InsufficientFee(fee);
-        }
-        (bool success, ) = payable(_sender).call{value: msg.value - fee}("");
-        if (!success) {
-            revert NativeTransferFailed();
-        }
+        // Calculate and process payment
+        uint256 fee = fetchFee(_sourceChainId, _intentHashes, _claimants, _data);
+        _processPayment(fee, _sender);
 
+        // Format message for dispatch
         (
             uint32 domain,
             bytes32 recipient,
