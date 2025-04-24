@@ -107,6 +107,15 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         }
     }
 
+    /**
+     * @notice Initiates proving of intents via Hyperlane
+     * @dev Sends message to source chain prover with intent data
+     * @param _sender Address that initiated the proving request
+     * @param _sourceChainId Chain ID of the source chain
+     * @param _intentHashes Array of intent hashes to prove
+     * @param _claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     */
     function destinationProve(
         address _sender,
         uint256 _sourceChainId,
@@ -150,6 +159,15 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         );
     }
 
+    /**
+     * @notice Calculates the fee required for Hyperlane message dispatch
+     * @dev Queries the Mailbox contract for accurate fee estimation
+     * @param _sourceChainId Chain ID of the source chain
+     * @param _intentHashes Array of intent hashes to prove
+     * @param _claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     * @return Fee amount required for message dispatch
+     */
     function fetchFee(
         uint256 _sourceChainId,
         bytes32[] calldata _intentHashes,
@@ -182,6 +200,19 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         return PROOF_TYPE;
     }
 
+    /**
+     * @notice Processes and formats data for Hyperlane message dispatch
+     * @dev Prepares all parameters needed for the Mailbox dispatch call
+     * @param _sourceChainId Chain ID of the source chain
+     * @param hashes Array of intent hashes to prove
+     * @param claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     * @return domain Hyperlane domain ID
+     * @return recipient Recipient address encoded as bytes32
+     * @return message Encoded message body with intent hashes and claimants
+     * @return metadata Additional metadata for the message
+     * @return hook Post-dispatch hook contract
+     */
     function processAndFormat(
         uint256 _sourceChainId,
         bytes32[] calldata hashes,

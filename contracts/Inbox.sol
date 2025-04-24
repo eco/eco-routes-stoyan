@@ -14,27 +14,38 @@ import {Semver} from "./libs/Semver.sol";
 
 /**
  * @title Inbox
- * @notice Main entry point for fulfilling intents
- * @dev Validates intent hash authenticity and executes calldata. Enables provers
+ * @notice Main entry point for fulfilling intents on the destination chain
+ * @dev Validates intent hash authenticity, executes calldata, and enables provers
  * to claim rewards on the source chain by checking the fulfilled mapping
  */
 contract Inbox is IInbox, Semver {
     using TypeCasts for address;
     using SafeERC20 for IERC20;
 
+    /**
+     * @notice Interface ID for IProver used to detect prover contracts
+     */
     bytes4 public constant IPROVER_INTERFACE_ID = 0xd8e1f34f; //type(IProver).interfaceId
 
-    // Mapping of intent hashes to their claimant address
+    /**
+     * @notice Mapping of intent hashes to their claimant addresses
+     * @dev Stores the address eligible to claim rewards for each fulfilled intent
+     */
     mapping(bytes32 => address) public fulfilled;
 
+    /**
+     * @notice Initializes the Inbox contract
+     */
     constructor() {}
 
     /**
      * @notice Fulfills an intent to be proven via storage proofs
+     * @dev Validates intent hash, executes calls, and marks as fulfilled
      * @param _route The route of the intent
-     * @param _rewardHash The hash of the reward
+     * @param _rewardHash The hash of the reward details
      * @param _claimant The address that will receive the reward on the source chain
      * @param _expectedHash The hash of the intent as created on the source chain
+     * @param _localProver The prover contract to use for verification
      * @return Array of execution results from each call
      */
     function fulfill(
@@ -55,6 +66,17 @@ contract Inbox is IInbox, Semver {
         return result;
     }
 
+    /**
+     * @notice Fulfills an intent and initiates proving in one transaction
+     * @dev Executes intent actions and sends proof message to source chain
+     * @param _route The route of the intent
+     * @param _rewardHash The hash of the reward details
+     * @param _claimant The address that will receive the reward on the source chain
+     * @param _expectedHash The hash of the intent as created on the source chain
+     * @param _localProver Address of prover on the destination chain
+     * @param _data Additional data for message formatting
+     * @return Array of execution results
+     */
     function fulfillAndProve(
         Route memory _route,
         bytes32 _rewardHash,
@@ -80,6 +102,14 @@ contract Inbox is IInbox, Semver {
         return result;
     }
 
+    /**
+     * @notice Initiates proving process for fulfilled intents
+     * @dev Sends message to source chain to verify intent execution
+     * @param _sourceChainId Chain ID of the source chain
+     * @param _intentHashes Array of intent hashes to prove
+     * @param _localProver Address of prover on the destination chain
+     * @param _data Additional data for message formatting
+     */
     function initiateProving(
         uint256 _sourceChainId,
         bytes32[] memory _intentHashes,
@@ -116,6 +146,7 @@ contract Inbox is IInbox, Semver {
      * @param _rewardHash The hash of the reward
      * @param _claimant The reward recipient address
      * @param _expectedHash The expected intent hash
+     * @param _localProver The prover contract to use
      * @return Array of execution results
      */
     function _fulfill(
@@ -197,5 +228,9 @@ contract Inbox is IInbox, Semver {
         return (results);
     }
 
+    /**
+     * @notice Allows the contract to receive ETH
+     * @dev Required for handling ETH transfer for intent execution
+     */
     receive() external payable {}
 }

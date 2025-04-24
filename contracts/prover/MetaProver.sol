@@ -113,6 +113,7 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
     /**
      * @notice Initiates proving of intents via Metalayer
      * @dev Sends message to source chain prover with intent data
+     * @param _sender Address that initiated the proving request
      * @param _sourceChainId Chain ID of source chain
      * @param _intentHashes Array of intent hashes to prove
      * @param _claimants Array of claimant addresses
@@ -195,6 +196,17 @@ contract MetaProver is IMetalayerRecipient, MessageBridgeProver, Semver {
         return PROOF_TYPE;
     }
 
+    /**
+     * @notice Processes and formats data for Metalayer message dispatch
+     * @dev Prepares all parameters needed for the Router dispatch call
+     * @param _sourceChainId Chain ID of the source chain
+     * @param hashes Array of intent hashes to prove
+     * @param claimants Array of claimant addresses
+     * @param _data Additional data for message formatting
+     * @return domain Metalayer domain ID
+     * @return recipient Recipient address encoded as bytes32
+     * @return message Encoded message body with intent hashes and claimants
+     */
     function processAndFormat(
         uint256 _sourceChainId,
         bytes32[] calldata hashes,
