@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Load environment variables from .env safely
 if [ -f .env ]; then
@@ -6,6 +6,15 @@ if [ -f .env ]; then
     source .env
     set +a
 fi
+
+# Ensure RESULTS_FILE is set
+if [ -z "$RESULTS_FILE" ]; then
+    echo "❌ Error: RESULTS_FILE is not set in .env!"
+    exit 1
+fi
+
+# We'll create the header for RESULTS_FILE once we know all the contract names
+echo "🧹 Will clean up $RESULTS_FILE for new deployment"
 
 # Function to compute CREATE2 address and check if contract is already deployed
 check_create2_deployed() {
@@ -79,6 +88,24 @@ echo "👛 Wallet Public Address: $PUBLIC_ADDRESS"
 # Get root level keys from deployBytecode.json (these are environment names like "default", "production", etc.)
 ROOT_KEYS=$(jq -r 'keys[]' "$BYTECODE_FILE")
 
+# Create header for RESULTS_FILE
+echo -n "Environment,ChainID" > $RESULTS_FILE
+
+# First, collect all unique contract names across all environments
+ALL_CONTRACT_NAMES=""
+for ENV_KEY in $ROOT_KEYS; do
+    ENV_CONTRACT_KEYS=$(jq -r ".[\"$ENV_KEY\"].contracts | keys[]" "$BYTECODE_FILE")
+    ALL_CONTRACT_NAMES="$ALL_CONTRACT_NAMES $ENV_CONTRACT_KEYS"
+done
+
+# Add unique contract names to header
+UNIQUE_CONTRACT_NAMES=$(echo $ALL_CONTRACT_NAMES | tr ' ' '\n' | sort | uniq)
+for CONTRACT_NAME in $UNIQUE_CONTRACT_NAMES; do
+    echo -n ",$CONTRACT_NAME" >> $RESULTS_FILE
+done
+echo "" >> $RESULTS_FILE
+echo "📋 Created CSV header with all contract names"
+
 # Loop through each environment in the bytecode file
 for ENV_KEY in $ROOT_KEYS; do
     echo "🔄 Processing environment: $ENV_KEY"
@@ -87,7 +114,7 @@ for ENV_KEY in $ROOT_KEYS; do
     CONTRACT_KEYS=$(jq -r ".[\"$ENV_KEY\"].contracts | keys[]" "$BYTECODE_FILE")
     echo "📜 Contracts to deploy: $CONTRACT_KEYS"
 
-     # Extract the CREATE3 Deployer address from the bytecode file                                                                                 
+     # Extract the CREATE2 Deployer address from the bytecode file                                                                                 
       CREATEX_DEPLOYER_ADDRESS=$(jq -r ".[\"$ENV_KEY\"].createXDeployerAddress" "$BYTECODE_FILE")                                            
       if [[ "$CREATEX_DEPLOYER_ADDRESS" == "null" || -z "$CREATEX_DEPLOYER_ADDRESS" ]]; then                                                 
           echo "❌ Error: No createXDeployerAddress found for environment $ENV_KEY. Using default deployment method."                      
@@ -125,9 +152,16 @@ for ENV_KEY in $ROOT_KEYS; do
         
         echo "🌐 Deploying contracts to Chain ID: $CHAIN_ID with RPC: $RPC_URL"
         
+        # Initialize CSV row with environment and chain ID
+        CSV_ROW="$ENV_KEY,$CHAIN_ID"
+        # Create a map for contract addresses - must be declared local to avoid name conflicts
+        declare -A CONTRACT_ADDRESSES=()
+        # Debug information
+        echo "🔍 Starting fresh contract addresses map for $ENV_KEY on chain $CHAIN_ID"
+        
         # Loop through each contract and deploy using cast
         for CONTRACT_NAME in $CONTRACT_KEYS; do
-            echo "📝 Deploying contract: $CONTRACT_NAME"
+            echo "📝 Processing contract: $CONTRACT_NAME"
             
             # Extract bytecode for this contract
             BYTECODE=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].deployBytecode" "$BYTECODE_FILE")
@@ -135,20 +169,26 @@ for ENV_KEY in $ROOT_KEYS; do
             # Skip if bytecode is empty or null
             if [[ "$BYTECODE" == "null" || -z "$BYTECODE" ]]; then
                 echo "⚠️ Warning: No bytecode found for $CONTRACT_NAME. Skipping..."
+                CONTRACT_ADDRESSES["$CONTRACT_NAME"]="undefined"
                 continue
             fi
 
             INIT_CODE_HASH=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].initCodeHash" "$BYTECODE_FILE")
             if [[ "$INIT_CODE_HASH" == "null" || -z "$INIT_CODE_HASH" ]]; then
                 echo "❌ Error: initCodeHash not set for contract $CONTRACT_NAME"
-                exit 1
+                CONTRACT_ADDRESSES["$CONTRACT_NAME"]="undefined"
+                continue
             fi
 
-            # Check if contract is already deployed using CREATE3
+            # Check if contract is already deployed using CREATE2
             if check_create2_deployed "$CREATEX_DEPLOYER_ADDRESS" "$KECCAK_SALT" "$INIT_CODE_HASH" "$RPC_URL" "$CONTRACT_NAME"; then
-                    echo " ⏭️ Skipping deployment for $CONTRACT_NAME as it's already deployed"
-                    continue
+                # Get the predicted address
+                PREDICTED_ADDRESS=$(cast call "$CREATEX_DEPLOYER_ADDRESS" "computeCreate2Address(bytes32,bytes32)(address)" "$KECCAK_SALT" "$INIT_CODE_HASH" --rpc-url "$RPC_URL")
+                echo " ⏭️ Skipping deployment for $CONTRACT_NAME as it's already deployed at $PREDICTED_ADDRESS"
+                CONTRACT_ADDRESSES["$CONTRACT_NAME"]="$PREDICTED_ADDRESS"
+                continue
             fi
+            
             # Deploy using cast
             echo "🚀 Deploying $CONTRACT_NAME to chain $CHAIN_ID..."
             TEMP_BYTECODE_FILE=$(mktemp)
@@ -158,24 +198,35 @@ for ENV_KEY in $ROOT_KEYS; do
             echo "Executing command: FOUNDRY_CMD"
             eval $FOUNDRY_CMD
             DEPLOY_EXIT_CODE=$?
-            # Clean up temp file                                                                                                                  │ │
+            # Clean up temp file                                                                                                                  
             rm "$TEMP_BYTECODE_FILE"  
             
             if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
-                # Extract the contract address from the result
-                CONTRACT_ADDR=$(echo "$RESULT" | grep -oE "Deployed to: (0x[a-fA-F0-9]{40})" | cut -d' ' -f3)
-                echo "✅ $CONTRACT_NAME deployed to: $CONTRACT_ADDR on chain $CHAIN_ID"
-                
-                # Save these addresses to a file for reference
-                echo "$ENV_KEY,$CHAIN_ID,$CONTRACT_NAME,$CONTRACT_ADDR" >> deploy_results.csv
+                # Get the deployed address after successful deployment
+                DEPLOYED_ADDRESS=$(cast call "$CREATEX_DEPLOYER_ADDRESS" "computeCreate2Address(bytes32,bytes32)(address)" "$KECCAK_SALT" "$INIT_CODE_HASH" --rpc-url "$RPC_URL")
+                echo "✅ $CONTRACT_NAME deployed to: $DEPLOYED_ADDRESS on chain $CHAIN_ID"
+                CONTRACT_ADDRESSES["$CONTRACT_NAME"]="$DEPLOYED_ADDRESS"
             else
                 echo "❌ Failed to deploy $CONTRACT_NAME to chain $CHAIN_ID"
+                CONTRACT_ADDRESSES["$CONTRACT_NAME"]="undefined"
             fi
         done
+        
+        # Build the CSV row with contract addresses
+        for CONTRACT_NAME in $UNIQUE_CONTRACT_NAMES; do
+            if [[ -v CONTRACT_ADDRESSES["$CONTRACT_NAME"] ]]; then
+                CSV_ROW="$CSV_ROW,${CONTRACT_ADDRESSES[$CONTRACT_NAME]}"
+            else
+                CSV_ROW="$CSV_ROW,undefined"
+            fi
+        done
+        
+        # Append to CSV file
+        echo "$CSV_ROW" >> $RESULTS_FILE
         
         echo "✅ Deployment on Chain ID: $CHAIN_ID completed!"
     done
 done
 
 echo "🎉 All deployments completed!"
-echo "📋 Deployment results saved to deploy_results.csv"
+echo "📋 Deployment results saved to $RESULTS_FILE"
