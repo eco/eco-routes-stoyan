@@ -57,7 +57,6 @@ if [ -z "$PRIVATE_KEY" ]; then
 fi
 
 # Get the deployment data URL from the same source as MultiDeploy.sh
-DEPLOY_DATA_URL="https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
 if [ -z "$DEPLOY_DATA_URL" ]; then
     echo "❌ Error: DEPLOY_DATA_URL is not set!"
     exit 1

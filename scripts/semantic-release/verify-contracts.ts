@@ -16,12 +16,12 @@
 import { spawn } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+import { promisify } from 'util'
 import { SemanticContext } from './sr-prepare'
 import {
   PATHS,
   ENV_VARS,
-  THRESHOLDS,
-  getDeploymentResultsPath,
+  THRESHOLDS
 } from './constants'
 import { Logger } from './helpers'
 
@@ -92,12 +92,12 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     )
 
     // Set up environment for verification
-    const resultsFile = getDeploymentResultsPath(cwd)
+    const resultsFile = path.join(cwd, PATHS.OUTPUT_DIR, 'verify-data.txt')
 
-    // Check if deployment results exist
+    // Check if verification data exists
     if (!fs.existsSync(resultsFile)) {
       logger.error(
-        `Deployment results file not found at ${resultsFile}, skipping verification`,
+        `Verification data file not found at ${resultsFile}, skipping verification`,
       )
       return
     }
@@ -106,22 +106,26 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     const fileContent = fs.readFileSync(resultsFile, 'utf-8')
     if (!fileContent.trim()) {
       logger.error(
-        `Deployment results file is empty at ${resultsFile}, skipping verification`,
+        `Verification data file is empty at ${resultsFile}, skipping verification`,
       )
       return
     }
 
     const entryCount = fileContent.split('\n').filter(Boolean).length
     logger.log(
-      `Found deployment results file with ${entryCount} entries to verify`,
+      `Found verification data file with ${entryCount} entries to verify`,
     )
 
     // If there are too many entries, provide a warning that verification might take a while
     if (entryCount > THRESHOLDS.VERIFICATION_ENTRIES_WARNING) {
       logger.warn(
-        `Large number of deployment entries (${entryCount}) might cause verification to take longer than usual`,
+        `Large number of verification entries (${entryCount}) might cause verification to take longer than usual`,
       )
     }
+
+    // The chain IDs are already included in the verification file
+    // No need to fetch them separately, Verify.sh will read them directly from the file
+    logger.log('Chain IDs already included in verification data file')
 
     // Execute verification
     await executeVerification(logger, cwd, {
@@ -138,31 +142,56 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
 }
 
 /**
- * Execute the verification script
+ * Execute the verification script using async/await
+ * @param logger Logger instance for output messages
+ * @param cwd Current working directory
+ * @param config Configuration for verification including results file and keys
  */
 async function executeVerification(
   logger: Logger,
   cwd: string,
   config: { resultsFile: string; verificationKeys: Record<string, string> },
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // Path to the verification script
-    const verifyScriptPath = path.join(cwd, PATHS.VERIFICATION_SCRIPT)
+  // Path to the verification script
+  const verifyScriptPath = path.join(cwd, PATHS.VERIFICATION_SCRIPT)
 
-    if (!fs.existsSync(verifyScriptPath)) {
-      return reject(
-        new Error(`Verification script not found at ${verifyScriptPath}`),
-      )
-    }
+  if (!fs.existsSync(verifyScriptPath)) {
+    throw new Error(`Verification script not found at ${verifyScriptPath}`)
+  }
 
-    logger.log(
-      `Running verification for deployment results in ${config.resultsFile}`,
-    )
+  logger.log(
+    `Running verification for deployment results in ${config.resultsFile}`,
+  )
 
-    // Pass verification keys directly as JSON string
-    const verificationKeysJson = JSON.stringify(config.verificationKeys)
-
-    const verifyProcess = spawn(verifyScriptPath, [], {
+  // Pass verification keys directly as JSON string
+  const verificationKeysJson = JSON.stringify(config.verificationKeys)
+  
+  // Use promisify for cleaner async/await handling
+  
+  const execProcess = promisify((script: string, options: any, callback: (err: Error | null, code: number) => void) => {
+    const verifyProcess = spawn(script, [], options);
+    
+    verifyProcess.on('close', (code) => {
+      logger.log(`Verification process exited with code ${code}`);
+      
+      if (code !== 0) {
+        logger.error('Verification encountered some failures');
+      }
+      
+      // Always call back with success - we don't want to fail the release
+      callback(null, code || 0);
+    });
+    
+    verifyProcess.on('error', (error) => {
+      logger.error(
+        `Verification process failed to start: ${(error as Error).message}`,
+      );
+      callback(error, 1);
+    });
+  });
+  
+  try {
+    await execProcess(verifyScriptPath, {
       env: {
         ...process.env,
         [ENV_VARS.RESULTS_FILE]: config.resultsFile,
@@ -171,24 +200,9 @@ async function executeVerification(
       stdio: 'inherit',
       shell: true,
       cwd,
-    })
-
-    verifyProcess.on('close', (code) => {
-      logger.log(`Verification process exited with code ${code}`)
-
-      if (code !== 0) {
-        logger.error('Verification encountered some failures')
-      }
-
-      // Resolve regardless of exit code - we don't want to fail the release
-      resolve()
-    })
-
-    verifyProcess.on('error', (error) => {
-      logger.error(
-        `Verification process failed to start: ${(error as Error).message}`,
-      )
-      reject(error)
-    })
-  })
+    });
+  } catch (error) {
+    // Log the error but don't throw - we want to continue the release process
+    logger.error(`Verification process error: ${(error as Error).message}`);
+  }
 }

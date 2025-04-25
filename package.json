@@ -57,7 +57,7 @@
     "pub:tag": "npx tsx scripts/publish/tag.ts",
     "pub:publish": "npx tsx scripts/publish/publish.ts",
     "deploy:plugin": "npx tsx scripts/semantic-release/deploy-contracts.ts",
-    "genBytecode": "npx tsx scripts/genBytecode.ts",
+    "genBytecode": "npx tsx scripts/semantic-release/gen-bytecode.ts",
     "build:semantic-plugin": "tsc",
     "release": "semantic-release"
   },

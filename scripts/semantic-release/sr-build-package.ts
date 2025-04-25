@@ -26,7 +26,6 @@ import { getPackageInfo, Logger } from './helpers'
 import { getBuildDirPath, PACKAGE } from './constants'
 import { getGitHashShort } from './solidity-version-updater'
 import { determineSalts } from '../utils/extract-salt'
-import { generateDeploymentFile } from '../genBytecode.ts'
 
 // Define the contract types that form our chain configuration
 // This is used for both CSV headers and TypeScript type definitions
@@ -152,16 +151,6 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
 
     // Generate CSV file from addresses
     generateCsvFile(deployedAddresses, buildDir, logger)
-
-    // Generates the deploy bytecode file
-    const bytecodePath = path.join(buildDir, 'deployBytecode.json')
-    generateDeploymentFile(
-      [
-        { name: 'default', value: rootSalt },
-        { name: 'pre', value: preprodRootSalt },
-      ],
-      bytecodePath,
-    )
 
     // Generate index.ts file
     generateIndexFile(deployedAddresses, buildDir, version, logger)

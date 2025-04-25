@@ -7,15 +7,19 @@ if [ -f .env ]; then
     set +a
 fi
 
-# Ensure RESULTS_FILE is set
-if [ -z "$RESULTS_FILE" ]; then
-    echo "❌ Error: RESULTS_FILE is not set in .env!"
+# Define file paths
+VERIFICATION_DATA_FILE=${RESULTS_FILE:-"out/verify-data.txt"}
+BYTECODE_FILE=${BYTECODE_FILE:-"build/deployBytecode.json"}
+
+# Ensure verification data file exists
+if [ ! -f "$VERIFICATION_DATA_FILE" ]; then
+    echo "❌ Error: Verification data file not found at $VERIFICATION_DATA_FILE!"
     exit 1
 fi
 
-# Ensure deploy file exists
-if [ ! -f "$RESULTS_FILE" ]; then
-    echo "❌ Error: $RESULTS_FILE not found!"
+# Ensure bytecode file exists
+if [ ! -f "$BYTECODE_FILE" ]; then
+    echo "❌ Error: Bytecode file not found at $BYTECODE_FILE!"
     exit 1
 fi
 
@@ -27,19 +31,62 @@ else
     echo "⚠️ Will attempt to use individual API key environment variables for verification."
 fi
 
+# Contract path lookup function
+# Arguments:
+#   $1 - Contract name
+get_contract_path() {
+    local contract_name=$1
+    
+    # Define known contract paths
+    case "$contract_name" in
+        "IntentSource")
+            echo "contracts/IntentSource.sol:IntentSource"
+            ;;
+        "Inbox")
+            echo "contracts/Inbox.sol:Inbox" 
+            ;;
+        "HyperProver")
+            echo "contracts/prover/HyperProver.sol:HyperProver"
+            ;;
+        *)
+            # Default format for unknown contracts
+            echo "contracts/${contract_name}.sol:${contract_name}"
+            ;;
+    esac
+}
+
+# Read the bytecode file to get constructor arguments
+echo "📄 Reading bytecode file for constructor arguments..."
+BYTECODE_JSON=$(cat "$BYTECODE_FILE")
+
 # Read deployment data and verify contracts
-while IFS=, read -r CHAIN_ID CONTRACT_ADDRESS CONTRACT_PATH CONSTRUCTOR_ARGS; do
+while IFS=, read -r CHAIN_ID CONTRACT_ADDRESS CONTRACT_NAME ENVIRONMENT; do
     # Skip empty lines
-    if [ -z "$CHAIN_ID" ] || [ -z "$CONTRACT_ADDRESS" ]; then
+    if [ -z "$CHAIN_ID" ] || [ -z "$CONTRACT_ADDRESS" ] || [ -z "$CONTRACT_NAME" ]; then
         continue
     fi
-
+    
+    # Clean up input
     CHAIN_ID=$(echo "$CHAIN_ID" | tr -d '[:space:]')
     CONTRACT_ADDRESS=$(echo "$CONTRACT_ADDRESS" | tr -d '[:space:]')
-    CONTRACT_PATH=$(echo "$CONTRACT_PATH" | xargs)
-    CONSTRUCTOR_ARGS=$(echo "$CONSTRUCTOR_ARGS" | xargs 2>/dev/null || echo "")
-
-    echo "🔍 Verifying contract $CONTRACT_ADDRESS on Chain ID $CHAIN_ID"
+    CONTRACT_NAME=$(echo "$CONTRACT_NAME" | tr -d '[:space:]')
+    ENVIRONMENT=$(echo "$ENVIRONMENT" | tr -d '[:space:]')
+    
+    echo "🔍 Verifying contract $CONTRACT_NAME at $CONTRACT_ADDRESS on Chain ID $CHAIN_ID"
+    
+    # Get the contract path
+    CONTRACT_PATH=$(get_contract_path "$CONTRACT_NAME")
+    
+    # Extract constructor arguments from the bytecode file based on environment
+    ENCODED_ARGS=$(echo "$BYTECODE_JSON" | jq -r --arg env "$ENVIRONMENT" --arg contract "$CONTRACT_NAME" '.[$env].contracts[$contract].encodedArgs // ""')
+    
+    # Log what we found
+    if [ -n "$ENCODED_ARGS" ] && [ "$ENCODED_ARGS" != "null" ]; then
+        echo "📝 Found encoded constructor arguments for $CONTRACT_NAME"
+    else
+        echo "⚠️ No constructor arguments found for $CONTRACT_NAME"
+        ENCODED_ARGS=""
+    fi
 
     # Try to get the API key from the verification keys json first
     if [ -n "$VERIFICATION_KEYS" ]; then
@@ -61,8 +108,8 @@ while IFS=, read -r CHAIN_ID CONTRACT_ADDRESS CONTRACT_PATH CONSTRUCTOR_ARGS; do
         --etherscan-api-key $ETHERSCAN_API_KEY"
     
     # Only add constructor args if they exist
-    if [ -n "$CONSTRUCTOR_ARGS" ]; then
-        VERIFY_CMD+=" --constructor-args $CONSTRUCTOR_ARGS"
+    if [ -n "$ENCODED_ARGS" ]; then
+        VERIFY_CMD+=" --constructor-args $ENCODED_ARGS"
     fi
     
     VERIFY_CMD+=" $CONTRACT_ADDRESS $CONTRACT_PATH"
@@ -73,21 +120,21 @@ while IFS=, read -r CHAIN_ID CONTRACT_ADDRESS CONTRACT_PATH CONSTRUCTOR_ARGS; do
     exit_code=$?
 
     if [ $exit_code -ne 0 ]; then
-        echo "❌ Verification failed for $CONTRACT_ADDRESS on Chain ID $CHAIN_ID. Retrying in 3 seconds..."
+        echo "❌ Verification failed for $CONTRACT_ADDRESS ($CONTRACT_NAME) on Chain ID $CHAIN_ID. Retrying in 3 seconds..."
         sleep 3
         eval $VERIFY_CMD  # Retry once
         exit_code=$?
 
         if [ $exit_code -ne 0 ]; then
-            echo "❌ Verification failed again for $CONTRACT_ADDRESS on Chain ID $CHAIN_ID. Skipping..."
+            echo "❌ Verification failed again for $CONTRACT_ADDRESS ($CONTRACT_NAME) on Chain ID $CHAIN_ID. Skipping..."
         else
-            echo "✅ Successfully verified $CONTRACT_ADDRESS ($CONTRACT_PATH) on retry!"
+            echo "✅ Successfully verified $CONTRACT_ADDRESS ($CONTRACT_NAME) on retry!"
         fi
     else
-        echo "✅ Successfully verified $CONTRACT_ADDRESS ($CONTRACT_PATH) on Chain ID $CHAIN_ID"
+        echo "✅ Successfully verified $CONTRACT_ADDRESS ($CONTRACT_NAME) on Chain ID $CHAIN_ID"
     fi
 
     # New lines
     echo ""
     echo ""
-done < "$RESULTS_FILE"
+done < "$VERIFICATION_DATA_FILE"

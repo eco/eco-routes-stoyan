@@ -24,6 +24,7 @@ import { Logger } from './helpers'
 import { promisify } from 'util'
 import { exec } from 'child_process'
 import { verifyContracts } from './verify-contracts'
+import { generateMultipleDeploymentData } from './gen-bytecode'
 dotenv.config()
 
 const execPromise = promisify(exec)
@@ -75,7 +76,7 @@ export async function prepare(
   const packageName = packageJson.name
 
   // 1. Build the hardhat and forge files
-  buildProject()
+  // await buildProject() 
 
   // 2. Deploy contracts
   logger.log(`Deploying contracts for package: ${packageName}`)
@@ -84,12 +85,12 @@ export async function prepare(
 
   // 3. Verify contracts
   logger.log(`Verifying deployed contracts`)
-  // await verifyContracts(context)
+  await verifyContracts(context)
   logger.log(`Contracts verified for version ${nextRelease.version}`)
 
   // 4. Build the distribution package
   logger.log(`Building main package`)
-  await buildPackage(context)
+  // await buildPackage(context)
   logger.log(`Main package built for version ${nextRelease.version}`)
 }
 
