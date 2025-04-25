@@ -45,8 +45,8 @@ const CREATE_X_DEPLOYER_ADDRESS = '0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
 // List of contracts to deploy
 const CONTRACTS_TO_DEPLOY: Contract[] = [
   { name: 'IntentSource', args: [], path: 'contracts/IntentSource.sol:IntentSource' },
-  { name: 'Inbox', args: ['0xB963326B9969f841361E6B6605d7304f40f6b414', true, []], path: 'contracts/Inbox.sol:Inbox' },
-  { name: 'HyperProver', args: [], path: 'contracts/prover/HyperProver.sol:HyperProver' },
+  { name: 'Inbox', args: [], path: 'contracts/Inbox.sol:Inbox' },
+  // { name: 'HyperProver', args: [], path: 'contracts/prover/HyperProver.sol:HyperProver' },
 ]
 
 /**
@@ -72,7 +72,6 @@ export async function generateDeploymentFile(
   for (const salt of salts) {
     console.log(`Generating deployment data for salt ${salt.name}...`)
     const data = generateMultipleDeploymentData(salt.value, deployData)
-    data.chainIds = chainIDs // Store chain IDs in the deployment data
     deploymentData[salt.name] = data
   }
 
@@ -87,102 +86,65 @@ export async function generateDeploymentFile(
  * @param salt The salt to use for all deployments (32 bytes hex string with 0x prefix)
  * @returns Object with deployment data for all contracts
  */
-export function generateMultipleDeploymentData(salt: Hex, deployData: FetchData): Record<string, any> {
+export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): any {
 
-  
+
   // Initialize the deployment data structure with per-chain objects
-  const deploymentData: Record<string, any> = {}
-  
-  // For each chain ID in the deployment data
-  for (const [chainId, chainData] of Object.entries(deployData)) {
-    console.log(`Generating deployment data for chain ID ${chainId}...`)
-    
-    // Initialize chain-specific object
-    deploymentData[chainId] = {
-      mailboxAddress: chainData.mailbox, // Store mailbox address from chain data
-      salt,
-      keccakSalt: keccak256(salt),
-      contracts: {},
-    }
-    
-    // Deploy all contracts in order
-    // Making sure that dependencies are available when needed
-    const deployedContracts: Record<string, any> = {}
-    
-    // Process contracts in order that ensures dependencies are available
-    // Sort contracts placing Inbox first, then others
-    const sortedContracts = [...CONTRACTS_TO_DEPLOY].sort((a, b) => {
-      if (a.name === 'Inbox') return -1;
-      if (b.name === 'Inbox') return 1;
-      return 0;
-    });
-    
-    for (const contract of sortedContracts) {
-      const contractName = contract.name
-      try {
-        console.log(`Generating ${contractName} deployment data for chain ${chainId}...`)
-        
-        // Create a copy of the contract to modify without affecting the original
-        let contractWithArgs = {...contract}
-        let contractArgs = [...contract.args]
-        
-        // Set dynamic arguments based on contract type and chain
-        if (contractName === 'HyperProver') {
-          // For HyperProver we need the inbox address for this chain
-          if (deployedContracts['Inbox']) {
-            // Calculate inbox address from previously generated data
-            const inboxAddress = getContractAddress({
-              bytecode: deployedContracts['Inbox'].deployBytecode,
-              from: CREATE_X_DEPLOYER_ADDRESS,
-              opcode: 'CREATE2',
-              salt: keccak256(salt),
-            });
-            
-            // Set constructor args: [mailboxAddress, inboxAddress]
-            contractArgs = [chainData.mailbox, inboxAddress];
-            console.log(`Setting HyperProver args for chain ${chainId}: [${chainData.mailbox}, ${inboxAddress}]`);
-          } else {
-            console.warn(`Cannot find Inbox data for HyperProver on chain ${chainId}, using default args`);
-            contractArgs = [chainData.mailbox, '0x0000000000000000000000000000000000000001'];
-          }
-        }
-        
-        // Update args in the contract copy
-        contractWithArgs = {
-          ...contract,
-          args: contractArgs
-        };
-        
-        // Generate the deployment bytecode with the updated args
-        const contractData = generateBytecodeDeployData({
-          value: 0n,
-          salt,
-          contract: contractWithArgs,
-        });
-        
-        // Store the generated data
-        deployedContracts[contractName] = {
-          args: contractArgs,
-          initCodeHash: contractData.initCodeHash,
-          encodedArgs: contractData.encodedArgs,
-          contractPath: contract.path,
-          deployBytecode: contractData.deployBytecode,
-        };
-        
-        console.log(`Successfully generated ${contractName} deployment data for chain ${chainId}`);
-      } catch (error) {
-        console.error(
-          `Error generating ${contractName} deployment data for chain ${chainId}:`,
-          error,
-        );
-      }
-    }
-    
-    // Store all contracts for this chain
-    deploymentData[chainId].contracts = deployedContracts;
+  let deploymentData: any
+
+
+  // Initialize chain-specific object
+  deploymentData = {
+    salt,
+    keccakSalt: keccak256(salt),
+    contracts: {},
   }
-  
-  return deploymentData;
+
+  // Deploy all contracts in order
+  // Making sure that dependencies are available when needed
+  const deployedContracts: Record<string, any> = {}
+
+
+  for (const contract of CONTRACTS_TO_DEPLOY) {
+    const contractName = contract.name
+    try {
+
+      // Generate the deployment bytecode with the updated args
+      const contractData = generateBytecodeDeployData({
+        value: 0n,
+        salt,
+        contract,
+      })
+
+      // Store the generated data
+      deployedContracts[contractName] = {
+        args: contract.args,
+        initCodeHash: contractData.initCodeHash,
+        encodedArgs: contractData.encodedArgs,
+        contractPath: contract.path,
+        expectedAddress: getContractAddress({
+          bytecode: contractData.deployBytecode,
+          from: CREATE_X_DEPLOYER_ADDRESS,
+          opcode: 'CREATE2',
+          salt: keccak256(contractData.salt)
+        }),
+        deployBytecode: contractData.deployBytecode,
+      }
+
+      console.log(`Successfully generated ${contractName} deployment data `)
+    } catch (error) {
+      console.error(
+        `Error generating ${contractName} deployment data:`,
+        error,
+      )
+    }
+  }
+
+  // Store all contracts for this chain
+  deploymentData.contracts = deployedContracts
+
+
+  return deploymentData
 }
 
 /**
@@ -289,7 +251,7 @@ export function saveDeploymentData(
  * @returns Array of available chain IDs
  * @throws Error if unable to fetch or parse deployment data
  */
-export async function fetchDeployData(): Promise<FetchData> {
+export async function fetchDeployData(): Promise<string[]> {
   // Get the URL from environment or use default
   const DEPLOY_DATA_URL = process.env.DEPLOY_DATA_URL ||
     "https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
@@ -312,7 +274,7 @@ export async function fetchDeployData(): Promise<FetchData> {
 
     if (chainIds.length > 0) {
       console.log(`Found ${chainIds.length} chain IDs in deployment data: ${chainIds.join(', ')}`)
-      return deployData
+      return chainIds
     } else {
       throw new Error('No chain IDs found in deployment data')
     }
