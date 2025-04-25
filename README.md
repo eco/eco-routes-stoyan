@@ -92,7 +92,7 @@ To get a local copy up and running follow these simple steps.
 
 Running this project locally requires the following:
 
-- [NodeJS v18.20.3](https://nodejs.org/en/blog/release/v18.20.3) - using nvm (instructions below)
+- [NodeJS v22.10.0](https://nodejs.org/) - using nvm (instructions below)
 - [Yarn v1.22.19](https://www.npmjs.com/package/yarn/v/1.22.19)
 
 It is recommended to use `nvm` to install Node. This is a Node version manager so your computer can easily handle multiple versions of Node:
@@ -103,32 +103,16 @@ It is recommended to use `nvm` to install Node. This is a Node version manager s
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 ```
 
-2. If you're not on an M1 Mac, skip to step 3. For Node < v15, `nvm` will need to be run in a Rosetta terminal since those versions are not supported by the M1 chip for installation. To do that, in the terminal simply run either:
-
-If running bash:
+2. Install our Node version using the following command:
 
 ```sh
-arch -x86_64 bash
+nvm install v22.10.0
 ```
 
-If running zsh:
-
-```sh
-arch -x86_64 zsh
-```
-
-More information about this can be found in [this thread](https://github.com/nvm-sh/nvm/issues/2350).
-
-3. Install our Node version using the following command:
-
-```sh
-nvm install v18.20.3
-```
-
-4. Once the installation is complete you can use it by running:
+3. Once the installation is complete you can use it by running:
 
 ```bash
-nvm use v18.20.3
+nvm use v22.10.0
 ```
 
 You should see it as the active Node version by running:
@@ -142,7 +126,7 @@ nvm ls
 1. Clone the repo
 
 ```bash
- git clone git@github.com:the-eco-foundation/eco-routes.git
+ git clone git@github.com:eco/eco-routes-stoyan.git
 ```
 
 2. Install and build using yarn
@@ -165,7 +149,7 @@ yarn lint
 
 ```bash
 # tests
-$ yarn  test
+$ yarn test
 
 # test coverage
 $ yarn coverage
@@ -173,7 +157,110 @@ $ yarn coverage
 
 ### Deployment
 
-Deploy using `deploy.ts` in the `scripts` directory. This script draws from the configs (found in the `config` directory) as well as a local .env file. See `.env.example`.
+Eco Routes uses a sophisticated deployment system that ensures deterministic addresses across multiple blockchains, automated verification, and semantic versioning.
+
+#### Deployment System Architecture
+
+The deployment system consists of several interconnected components:
+
+1. **Semantic Release Pipeline**: Handles versioning, deployment, verification, and publishing.
+2. **Deterministic Deployment**: Uses CREATE2/CREATE3 for predictable contract addresses across networks.
+3. **Multi-Chain Deployment**: Deploys contracts to multiple EVM chains in one operation.
+4. **Contract Verification**: Automatically verifies deployed contracts on block explorers.
+5. **Package Publishing**: Builds and publishes npm packages with contract artifacts and TypeScript types.
+
+#### Setting Up the Deployment Environment
+
+1. **Required Environment Variables**:
+
+   ```bash
+   # Required for deployment
+   PRIVATE_KEY=0x...                # Deployer wallet private key
+   ALCHEMY_API_KEY=...              # API key for Alchemy RPC endpoints
+   
+   # For contract verification
+   CONTRACT_VERIFICATION_KEYS={"10":"your_api_key","8453":"your_api_key",...}
+   
+   # For publishing (CI environment)
+   NPM_TOKEN=...                    # NPM token with publish rights
+   
+   # Optional overrides
+   SALT=0x...                       # Override the default version-based salt
+   RESULTS_FILE=./path/to/file.csv  # Custom path for deployment results
+   DEPLOY_DATA_URL=https://...      # Custom URL for deployment chain configuration
+   ```
+
+2. **Installation**:
+
+   ```bash
+   yarn install
+   yarn build
+   ```
+
+#### Deployment Process
+
+The deployment process follows these steps:
+
+1. **Version Determination**:
+   - Based on semantic versioning from git commits
+   - Updates Solidity files with new version strings
+
+2. **Bytecode Generation**:
+   ```bash
+   yarn genBytecode
+   ```
+   - Generates deployment bytecode with constructor arguments
+   - Creates verification templates
+   - Fetches target chain IDs from deployment configuration
+
+3. **Contract Deployment**:
+   ```bash
+   yarn deploy:plugin
+   ```
+   - Deploys contracts to all configured chains
+   - Uses deterministic CREATE2/CREATE3 deployment
+   - Records addresses in deployment results CSV
+
+4. **Contract Verification**:
+   - Automatically verifies contracts on block explorers
+   - Formats constructor arguments correctly
+   - Handles verification API limitations and retries
+
+#### Deterministic Deployment with Salts
+
+The system uses CREATE2/CREATE3 for deterministic deployments:
+
+- **Salt Generation**: Derived from semantic version (e.g., `1.2.0`)
+- **Address Prediction**: Same contract + same version = same address across all chains
+- **Environment Support**: Separate salts for production and pre-production environments
+- **Deduplication**: Skips deployment if a contract is already deployed at the expected address
+
+#### Running a Deployment
+
+For local development and testing:
+
+```bash
+# Generate deployment bytecode and verification templates
+yarn genBytecode
+
+# Deploy to specified chains
+yarn deploy:plugin
+
+# Complete semantic-release process (deployment + verification + publishing)
+yarn semantic:pub
+```
+
+For CI/CD pipeline, deployments are triggered by commits to designated branches based on semantic versioning rules.
+
+#### Extending Deployment Support
+
+To add support for new chains:
+
+1. Update the deployment data URL with new chain IDs
+2. Add verification API keys for new chains
+3. Test deployment on new chains with the pre-production environment first
+
+For automated deployments and package publishing, we use semantic-release. Detailed documentation on the semantic-release process is available in the [semantic-release README](./scripts/semantic-release/README.md).
 
 ### End-To-End Testing
 
@@ -201,6 +288,6 @@ This section is under development. While the tests are not yet operational, the 
 
 ## Contact
 
-Project Link: [https://github.com/eco/eco-routes](https://github.com/eco/eco-routes)
+Project Link: [https://github.com/eco/eco-routes-stoyan](https://github.com/eco/eco-routes-stoyan)
 
 <p align="right">(<a href="#top">back to top</a>)</p>

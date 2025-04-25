@@ -217,6 +217,11 @@ contract Deploy is Script {
                 isDeployed(deployedContract),
                 "Contract did not get deployed"
             );
+        } else {
+            console.log(
+                "Contract already deployed at address:",
+                deployedContract
+            );
         }
     }
 

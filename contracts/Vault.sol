@@ -151,9 +151,7 @@ contract Vault is IVault {
      */
     function _recoverToken(address refundToken, address creator) internal {
         uint256 refundAmount = IERC20(refundToken).balanceOf(address(this));
-        if (refundAmount <= 0) {
-            revert ZeroRefundTokenBalance(refundToken);
-        }
+        require(refundAmount > 0, ZeroRefundTokenBalance(refundToken));
         IERC20(refundToken).safeTransfer(creator, refundAmount);
     }
 
