@@ -76,7 +76,7 @@ export async function prepare(
   const packageName = packageJson.name
 
   // 1. Build the hardhat and forge files
-  // await buildProject() 
+  await buildProject() 
 
   // 2. Deploy contracts
   logger.log(`Deploying contracts for package: ${packageName}`)
@@ -90,7 +90,7 @@ export async function prepare(
 
   // 4. Build the distribution package
   logger.log(`Building main package`)
-  // await buildPackage(context)
+  await buildPackage(context)
   logger.log(`Main package built for version ${nextRelease.version}`)
 }
 

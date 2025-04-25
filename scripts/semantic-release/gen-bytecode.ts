@@ -68,10 +68,7 @@ export async function generateDeploymentFile(
 
   // Save deployment data
   saveDeploymentData(deploymentData, outputPath)
-
-  // // Save constructor arguments for each contract and environment
-  // saveConstructorArgs(deploymentData, path.join(path.dirname(outputPath), 'constructor-args.json'))
-
+  
   // Only generate the CSV verification data, verification template will be created after deployment
   const verificationData = generateVerificationData(deploymentData, chainIds)
   saveVerificationData(verificationData, verificationPath)
