@@ -16,7 +16,7 @@ abstract contract BaseProver is IProver, ERC165 {
      * @dev Immutable to prevent unauthorized changes
      */
     address public immutable INBOX;
-    
+
     /**
      * @notice Mapping from intent hash to address eligible to claim rewards
      * @dev Zero address indicates intent hasn't been proven

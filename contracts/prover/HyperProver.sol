@@ -90,7 +90,12 @@ contract HyperProver is IMessageRecipient, MessageBridgeProver, Semver {
         _validateProvingRequest(msg.sender);
 
         // Calculate and process payment
-        uint256 fee = fetchFee(_sourceChainId, _intentHashes, _claimants, _data);
+        uint256 fee = fetchFee(
+            _sourceChainId,
+            _intentHashes,
+            _claimants,
+            _data
+        );
         _processPayment(fee, _sender);
 
         emit BatchSent(_intentHashes, _sourceChainId);

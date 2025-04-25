@@ -276,7 +276,7 @@ describe('HyperProver Test', (): void => {
         'UnauthorizedDestinationProve',
       )
     })
-    
+
     it('should handle exact fee payment with no refund needed', async () => {
       // Set up test data
       const sourceChainId = 123
@@ -299,10 +299,12 @@ describe('HyperProver Test', (): void => {
         claimants,
         data,
       )
-      
+
       // Track balances before and after
-      const solverBalanceBefore = await solver.provider.getBalance(solver.address)
-      
+      const solverBalanceBefore = await solver.provider.getBalance(
+        solver.address,
+      )
+
       // Call with exact fee (no refund needed)
       await hyperProver.connect(owner).destinationProve(
         solver.address,
@@ -312,15 +314,17 @@ describe('HyperProver Test', (): void => {
         data,
         { value: fee }, // Exact fee amount
       )
-      
+
       // Should dispatch successfully without refund
       expect(await mailbox.dispatchedWithRelayer()).to.be.true
-      
+
       // Balance should be unchanged since no refund was needed
-      const solverBalanceAfter = await solver.provider.getBalance(solver.address)
+      const solverBalanceAfter = await solver.provider.getBalance(
+        solver.address,
+      )
       expect(solverBalanceBefore).to.equal(solverBalanceAfter)
     })
-    
+
     it('should handle custom hook address correctly', async () => {
       // Set up test data
       const sourceChainId = 123
@@ -344,22 +348,24 @@ describe('HyperProver Test', (): void => {
         claimants,
         data,
       )
-      
+
       // Call with custom hook
-      await hyperProver.connect(owner).destinationProve(
-        solver.address,
-        sourceChainId,
-        intentHashes,
-        claimants,
-        data,
-        { value: fee },
-      )
-      
-      // Verify dispatch was called (we can't directly check hook address as 
+      await hyperProver
+        .connect(owner)
+        .destinationProve(
+          solver.address,
+          sourceChainId,
+          intentHashes,
+          claimants,
+          data,
+          { value: fee },
+        )
+
+      // Verify dispatch was called (we can't directly check hook address as
       // TestMailbox doesn't expose that property)
       expect(await mailbox.dispatchedWithRelayer()).to.be.true
     })
-    
+
     it('should handle empty arrays gracefully', async () => {
       // Set up test data with empty arrays
       const sourceChainId = 123
@@ -382,17 +388,21 @@ describe('HyperProver Test', (): void => {
         claimants,
         data,
       )
-      
+
       // Should process empty arrays without error
-      await expect(hyperProver.connect(owner).destinationProve(
-        solver.address,
-        sourceChainId,
-        intentHashes,
-        claimants,
-        data,
-        { value: fee },
-      )).to.not.be.reverted
-      
+      await expect(
+        hyperProver
+          .connect(owner)
+          .destinationProve(
+            solver.address,
+            sourceChainId,
+            intentHashes,
+            claimants,
+            data,
+            { value: fee },
+          ),
+      ).to.not.be.reverted
+
       // Should dispatch successfully
       expect(await mailbox.dispatchedWithRelayer()).to.be.true
     })

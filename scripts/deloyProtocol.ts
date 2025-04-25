@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { addJsonAddress } from './deploy/addresses'
 import { ContractTransactionResponse, Signer } from 'ethers'
-import { Deployer, Inbox, Prover } from '../typechain-types'
+import { Deployer, Prover } from '../typechain-types'
 import { Address, Hex, zeroAddress } from 'viem'
 import {
   isZeroAddress,
