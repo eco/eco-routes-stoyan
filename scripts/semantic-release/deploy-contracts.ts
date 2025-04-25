@@ -568,21 +568,3 @@ function updateVerificationFile(cwd: string, contracts: Contract[], logger?: Log
     logger?.error(`Failed to create verification file: ${(error as Error).message}`);
   }
 }
-
-// All parameter encoding has been moved to gen-bytecode.ts
-
-/**
- * Returns the contract path for a given contract name
- * @param contractName The name of the contract
- * @returns The full path to the contract source code
- */
-function getContractPath(contractName: string): string {
-  // Map contract names to their file paths
-  const contractPaths: Record<string, string> = {
-    'IntentSource': 'contracts/IntentSource.sol:IntentSource',
-    'Inbox': 'contracts/Inbox.sol:Inbox',
-    'HyperProver': 'contracts/prover/HyperProver.sol:HyperProver'
-  };
-  
-  return contractPaths[contractName] || `contracts/${contractName}.sol:${contractName}`;
-}
