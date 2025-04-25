@@ -31,28 +31,8 @@ else
     echo "⚠️ Will attempt to use individual API key environment variables for verification."
 fi
 
-# Get contract path from the bytecode file
-# Arguments:
-#   $1 - Contract name
-#   $2 - Environment
-get_contract_path() {
-    local contract_name=$1
-    local environment=$2
-    
-    # Extract contract path from the bytecode file based on environment
-    local contract_path=$(echo "$BYTECODE_JSON" | jq -r --arg env "$environment" --arg contract "$contract_name" '.[$env].contracts[$contract].contractPath // ""')
-    
-    # If we couldn't find the contract path in the bytecode file, fall back to default pattern
-    if [ -z "$contract_path" ] || [ "$contract_path" = "null" ]; then
-        echo "⚠️ Contract path not found in bytecode file for $contract_name in $environment, using default pattern"
-        echo "contracts/${contract_name}.sol:${contract_name}"
-    else
-        echo "$contract_path"
-    fi
-}
-
-# Read the bytecode file to get constructor arguments
-echo "📄 Reading bytecode file for constructor arguments..."
+# Read the bytecode file to get constructor arguments and contract paths
+echo "📄 Reading bytecode file for contract data..."
 BYTECODE_JSON=$(cat "$BYTECODE_FILE")
 
 # Read deployment data and verify contracts
@@ -70,11 +50,17 @@ while IFS=, read -r CHAIN_ID CONTRACT_ADDRESS CONTRACT_NAME ENVIRONMENT; do
     
     echo "🔍 Verifying contract $CONTRACT_NAME at $CONTRACT_ADDRESS on Chain ID $CHAIN_ID"
     
-    # Get the contract path from the bytecode file using both contract name and environment
-    CONTRACT_PATH=$(get_contract_path "$CONTRACT_NAME" "$ENVIRONMENT")
+    # Get the contract path from the environment and chain-specific data
+    CONTRACT_PATH=$(echo "$BYTECODE_JSON" | jq -r --arg env "$ENVIRONMENT" --arg chain "$CHAIN_ID" --arg contract "$CONTRACT_NAME" '.[$env][$chain].contracts[$contract].contractPath // ""')
     
-    # Extract constructor arguments from the bytecode file based on environment
-    ENCODED_ARGS=$(echo "$BYTECODE_JSON" | jq -r --arg env "$ENVIRONMENT" --arg contract "$CONTRACT_NAME" '.[$env].contracts[$contract].encodedArgs // ""')
+    # If not found, fall back to default
+    if [ -z "$CONTRACT_PATH" ] || [ "$CONTRACT_PATH" = "null" ]; then
+        echo "⚠️ Contract path not found in bytecode file, using default pattern"
+        CONTRACT_PATH="contracts/${CONTRACT_NAME}.sol:${CONTRACT_NAME}"
+    fi
+    
+    # Extract constructor arguments from the environment and chain-specific data
+    ENCODED_ARGS=$(echo "$BYTECODE_JSON" | jq -r --arg env "$ENVIRONMENT" --arg chain "$CHAIN_ID" --arg contract "$CONTRACT_NAME" '.[$env][$chain].contracts[$contract].encodedArgs // ""')
     
     # Log what we found
     if [ -n "$ENCODED_ARGS" ] && [ "$ENCODED_ARGS" != "null" ]; then

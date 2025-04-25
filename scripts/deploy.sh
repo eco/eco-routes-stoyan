@@ -109,23 +109,31 @@ echo "📋 Created CSV header with all contract names"
 for ENV_KEY in $ROOT_KEYS; do
     echo "🔄 Processing environment: $ENV_KEY"
     
-    # Get contract list for this environment
-    CONTRACT_KEYS=$(jq -r ".[\"$ENV_KEY\"].contracts | keys[]" "$BYTECODE_FILE")
+    # Get a contract list by finding unique contract names across all chains for this environment
+    CONTRACT_KEYS=$(jq -r --arg env "$ENV_KEY" '.[$env] | .[] | .contracts | keys | .[]' "$BYTECODE_FILE" | sort -u)
     echo "📜 Contracts to deploy: $CONTRACT_KEYS"
 
-     # Extract the CREATE2 Deployer address from the bytecode file                                                                                 
-      CREATEX_DEPLOYER_ADDRESS=$(jq -r ".[\"$ENV_KEY\"].createXDeployerAddress" "$BYTECODE_FILE")                                            
-      if [[ "$CREATEX_DEPLOYER_ADDRESS" == "null" || -z "$CREATEX_DEPLOYER_ADDRESS" ]]; then                                                 
-          echo "❌ Error: No createXDeployerAddress found for environment $ENV_KEY. Using default deployment method."                      
-          exit 1
-      fi
+     # Get the createX deployer address and keccak salt from a specific environment and chain
+    # We need to find a chain ID in the specified environment
+    FIRST_CHAIN_ID=$(jq -r --arg env "$ENV_KEY" '.[$env] | keys | .[0]' "$BYTECODE_FILE")
 
-       KECCAK_SALT=$(jq -r ".[\"$ENV_KEY\"].keccakSalt" "$BYTECODE_FILE")
-            if [[ "$KECCAK_SALT" == "null" || -z "$KECCAK_SALT" ]]; then
-                echo "❌ Error: Salt not set for environment $ENV_KEY. Please set it in the bytecode file."
-                exit 1
-            fi
-            echo "🔑 Using salt: $KECCAK_SALT"
+    if [[ "$FIRST_CHAIN_ID" == "null" || -z "$FIRST_CHAIN_ID" ]]; then
+        echo "❌ Error: No chain IDs found in bytecode file for environment $ENV_KEY."
+        exit 1
+    fi
+
+    echo "🔍 Using environment $ENV_KEY, chain ID $FIRST_CHAIN_ID to get common deployment data"
+
+    # Get the default CREATE2 deployer address
+    CREATEX_DEPLOYER_ADDRESS="0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed"  # Default CREATE2 deployer address
+    
+    # Get data from the bytecode file
+    KECCAK_SALT=$(jq -r --arg env "$ENV_KEY" --arg chainId "$FIRST_CHAIN_ID" '.[$env][$chainId].keccakSalt' "$BYTECODE_FILE")
+    if [[ "$KECCAK_SALT" == "null" || -z "$KECCAK_SALT" ]]; then
+        echo "❌ Error: Salt not set in bytecode file for environment $ENV_KEY, chain $FIRST_CHAIN_ID."
+        exit 1
+    fi
+    echo "🔑 Using salt: $KECCAK_SALT"
 
     # Process each chain from the deployment JSON data
     echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
@@ -162,19 +170,21 @@ for ENV_KEY in $ROOT_KEYS; do
         for CONTRACT_NAME in $CONTRACT_KEYS; do
             echo "📝 Processing contract: $CONTRACT_NAME"
             
-            # Extract bytecode for this contract
-            BYTECODE=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].deployBytecode" "$BYTECODE_FILE")
+            # Extract bytecode from the environment-specific and chain-specific sections
+            BYTECODE=$(jq -r --arg env "$ENV_KEY" --arg chain "$CHAIN_ID" --arg contract "$CONTRACT_NAME" '.[$env][$chain].contracts[$contract].deployBytecode // ""' "$BYTECODE_FILE")
             
             # Skip if bytecode is empty or null
-            if [[ "$BYTECODE" == "null" || -z "$BYTECODE" ]]; then
-                echo "⚠️ Warning: No bytecode found for $CONTRACT_NAME. Skipping..."
+            if [[ -z "$BYTECODE" || "$BYTECODE" == "null" ]]; then
+                echo "⚠️ Warning: No bytecode found for $CONTRACT_NAME on chain $CHAIN_ID in environment $ENV_KEY. Skipping..."
                 CONTRACT_ADDRESSES["$CONTRACT_NAME"]="undefined"
                 continue
             fi
 
-            INIT_CODE_HASH=$(jq -r ".[\"$ENV_KEY\"].contracts[\"$CONTRACT_NAME\"].initCodeHash" "$BYTECODE_FILE")
-            if [[ "$INIT_CODE_HASH" == "null" || -z "$INIT_CODE_HASH" ]]; then
-                echo "❌ Error: initCodeHash not set for contract $CONTRACT_NAME"
+            # Extract init code hash
+            INIT_CODE_HASH=$(jq -r --arg env "$ENV_KEY" --arg chain "$CHAIN_ID" --arg contract "$CONTRACT_NAME" '.[$env][$chain].contracts[$contract].initCodeHash // ""' "$BYTECODE_FILE")
+            
+            if [[ -z "$INIT_CODE_HASH" || "$INIT_CODE_HASH" == "null" ]]; then
+                echo "❌ Error: initCodeHash not set for contract $CONTRACT_NAME on chain $CHAIN_ID in environment $ENV_KEY"
                 CONTRACT_ADDRESSES["$CONTRACT_NAME"]="undefined"
                 continue
             fi

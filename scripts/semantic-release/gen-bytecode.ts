@@ -7,9 +7,18 @@ import {
   parseAbiParameters,
   zeroAddress,
   getAbiItem,
+  getContractAddress,
 } from 'viem'
 import fs from 'fs'
 import path from 'path'
+
+
+type FetchData = {
+  [chainId: string]: {
+    url: string
+    mailbox: Hex
+  }
+}
 
 // CREATEX Deployer ABI for the deploy function
 const CREATE_X_ABI = [
@@ -36,8 +45,8 @@ const CREATE_X_DEPLOYER_ADDRESS = '0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
 // List of contracts to deploy
 const CONTRACTS_TO_DEPLOY: Contract[] = [
   { name: 'IntentSource', args: [], path: 'contracts/IntentSource.sol:IntentSource' },
-  { name: 'Inbox', args: ['0xB963326B9969f841361E6B6605d7304f40f6b414', true, []] , path: 'contracts/Inbox.sol:Inbox'},
-  { name: 'HyperProver', args: [] , path: 'contracts/prover/HyperProver.sol:HyperProver'},
+  { name: 'Inbox', args: ['0xB963326B9969f841361E6B6605d7304f40f6b414', true, []], path: 'contracts/Inbox.sol:Inbox' },
+  { name: 'HyperProver', args: [], path: 'contracts/prover/HyperProver.sol:HyperProver' },
 ]
 
 /**
@@ -49,21 +58,21 @@ const CONTRACTS_TO_DEPLOY: Contract[] = [
 export async function generateDeploymentFile(
   salts: { value: Hex; name: string }[],
   outputPath: string,
-  verificationPath: string = path.join('out', 'deployment-results.csv'),
 ): Promise<void> {
   console.log(`Generating deployment data with salts ${salts.length}`)
   const deploymentData: Record<string, any> = {}
 
   // Fetch chain IDs from the deployment data URL
   // If this fails, it will throw an error that should propagate up
-  const chainIds = await fetchChainIdsFromDeployData()
-  console.log(`Using chain IDs for deployment: ${chainIds.join(', ')}`)
+  const deployData = await fetchDeployData()
+  const chainIDs = Object.keys(deployData)
+  console.log(`Using chain IDs for deployment: ${chainIDs.join(', ')}`)
 
   // Generate bytecode deployment data for each salt
   for (const salt of salts) {
     console.log(`Generating deployment data for salt ${salt.name}...`)
-    const data = generateMultipleDeploymentData(salt.value)
-    data.chainIds = chainIds // Store chain IDs in the deployment data
+    const data = generateMultipleDeploymentData(salt.value, deployData)
+    data.chainIds = chainIDs // Store chain IDs in the deployment data
     deploymentData[salt.name] = data
   }
 
@@ -74,179 +83,106 @@ export async function generateDeploymentFile(
 }
 
 /**
- * Generates verification data from deployment data and chain IDs
- * @param deploymentData Deployment data
- * @param chainIds Array of chain IDs
- * @returns Array of verification data entries
- */
-function generateVerificationData(
-  deploymentData: Record<string, any>,
-  chainIds: string[]
-): Array<{
-  chainId: string
-  contractAddress: string
-  contractPath: string
-  constructorArgs: string
-  environment: string
-}> {
-  const verificationData = []
-
-  // Go through each environment (default, pre, etc.)
-  for (const [envName, envData] of Object.entries(deploymentData)) {
-    if (!envData.contracts) continue
-
-    // For each contract in this environment
-    for (const [contractName, contractData] of Object.entries(envData.contracts)) {
-      if (!contractData) continue
-
-      const contractPath = getContractPath(contractName)
-      const args = (contractData as any).args || []
-
-      // Format constructor args properly for verification
-      let constructorArgs = ''
-      if (args.length > 0) {
-        try {
-          constructorArgs = serializeConstructorArgs(args, contractName)
-        } catch (error) {
-          console.error(`Error encoding constructor args for ${contractName}:`, error)
-        }
-      }
-
-      // Create an entry for each chain ID
-      for (const chainId of chainIds) {
-        verificationData.push({
-          chainId,
-          contractAddress: '0x', // Placeholder - will be updated after deployment
-          contractPath,
-          constructorArgs,
-          environment: envName
-        })
-      }
-    }
-  }
-
-  return verificationData
-}
-
-// Function removed - verification data file is now created after deployment with actual addresses
-
-/**
- * Properly serialize constructor arguments for contract verification
- * @param args The constructor arguments
- * @param contractName The name of the contract
- * @returns Hex string of encoded constructor arguments
- */
-function serializeConstructorArgs(args: any[], contractName: string): string {
-  // This is a simplified implementation - in a real-world scenario, 
-  // you would use a library like ethers.js or web3.js to properly ABI-encode the arguments
-  if (args.length === 0) return ''
-
-  // For basic types like addresses, we can format them directly
-  // In a real implementation, this would be more comprehensive
-  // based on the actual contract ABI
-  try {
-    // Basic encoding for common argument types
-    if (contractName === 'Inbox') {
-      // For Inbox constructor: (address owner, bool isActive, uint96 minReward, address[] solvers)
-      const [owner, isActive, minReward, solvers] = args
-
-      // Return a hexadecimal string without 0x prefix - simplified for this example
-      // In a real implementation, this would use proper ABI encoding
-      return encodeTxData(args)
-    } else if (contractName === 'HyperProver') {
-      // For HyperProver constructor: (address mailbox, address inbox)
-      const [mailbox, inbox] = args
-
-      // Return a hexadecimal string without 0x prefix
-      return encodeTxData(args)
-    }
-
-    // Default case for other contracts
-    return encodeTxData(args)
-  } catch (error) {
-    console.error(`Error serializing constructor args for ${contractName}:`, error)
-    return ''
-  }
-}
-
-/**
- * Simple encoding of transaction data
- * @param args Arguments to encode
- * @returns Encoded hex string
- */
-function encodeTxData(args: any[]): string {
-  // This is a placeholder - in a real implementation, you would use a proper ABI encoder
-  // For example, with ethers.js: ethers.utils.defaultAbiCoder.encode(types, args)
-
-  // For now, we'll just return a simplified representation
-  const hexArgs = args.map(arg => {
-    if (typeof arg === 'string' && arg.startsWith('0x')) {
-      // Already a hex string (like an address)
-      return arg.slice(2).padStart(64, '0')
-    } else if (typeof arg === 'boolean') {
-      // Boolean values
-      return arg ? '1'.padStart(64, '0') : '0'.padStart(64, '0')
-    } else if (typeof arg === 'number') {
-      // Number values
-      return arg.toString(16).padStart(64, '0')
-    } else if (Array.isArray(arg)) {
-      // For arrays, this is a simplified approach
-      // Real implementation would properly encode array length and elements
-      return arg.map(item =>
-        typeof item === 'string' && item.startsWith('0x')
-          ? item.slice(2).padStart(64, '0')
-          : item.toString(16).padStart(64, '0')
-      ).join('')
-    }
-
-    // Default
-    return '0'.padStart(64, '0')
-  }).join('')
-
-  return hexArgs ? `0x${hexArgs}` : ''
-}
-
-/**
  * Generates deployment data for multiple contracts using the same salt
  * @param salt The salt to use for all deployments (32 bytes hex string with 0x prefix)
  * @returns Object with deployment data for all contracts
  */
-export function generateMultipleDeploymentData(salt: Hex): Record<string, any> {
-  const deploymentData: Record<string, any> = {
-    createXDeployerAddress: CREATE_X_DEPLOYER_ADDRESS,
-    salt,
-    keccakSalt: keccak256(salt),
-    contracts: {},
-  }
+export function generateMultipleDeploymentData(salt: Hex, deployData: FetchData): Record<string, any> {
 
-  for (const contract of CONTRACTS_TO_DEPLOY) {
-    const contractName = contract.name
-    try {
-      console.log(`Generating deployment data for ${contractName}...`)
-      const contractData = generateBytecodeDeployData({
-        value: 0n,
-        salt,
-        contract,
-      })
-
-      deploymentData.contracts[contractName] = {
-        args: contractData.args,
-        initCodeHash: contractData.initCodeHash,
-        encodedArgs: contractData.encodedArgs,
-        contractPath: contract.path,
-        deployBytecode: contractData.deployBytecode,
-      }
-
-      console.log(`Successfully generated deployment data for ${contractName}`)
-    } catch (error) {
-      console.error(
-        `Error generating deployment data for ${contractName}:`,
-        error,
-      )
+  
+  // Initialize the deployment data structure with per-chain objects
+  const deploymentData: Record<string, any> = {}
+  
+  // For each chain ID in the deployment data
+  for (const [chainId, chainData] of Object.entries(deployData)) {
+    console.log(`Generating deployment data for chain ID ${chainId}...`)
+    
+    // Initialize chain-specific object
+    deploymentData[chainId] = {
+      mailboxAddress: chainData.mailbox, // Store mailbox address from chain data
+      salt,
+      keccakSalt: keccak256(salt),
+      contracts: {},
     }
+    
+    // Deploy all contracts in order
+    // Making sure that dependencies are available when needed
+    const deployedContracts: Record<string, any> = {}
+    
+    // Process contracts in order that ensures dependencies are available
+    // Sort contracts placing Inbox first, then others
+    const sortedContracts = [...CONTRACTS_TO_DEPLOY].sort((a, b) => {
+      if (a.name === 'Inbox') return -1;
+      if (b.name === 'Inbox') return 1;
+      return 0;
+    });
+    
+    for (const contract of sortedContracts) {
+      const contractName = contract.name
+      try {
+        console.log(`Generating ${contractName} deployment data for chain ${chainId}...`)
+        
+        // Create a copy of the contract to modify without affecting the original
+        let contractWithArgs = {...contract}
+        let contractArgs = [...contract.args]
+        
+        // Set dynamic arguments based on contract type and chain
+        if (contractName === 'HyperProver') {
+          // For HyperProver we need the inbox address for this chain
+          if (deployedContracts['Inbox']) {
+            // Calculate inbox address from previously generated data
+            const inboxAddress = getContractAddress({
+              bytecode: deployedContracts['Inbox'].deployBytecode,
+              from: CREATE_X_DEPLOYER_ADDRESS,
+              opcode: 'CREATE2',
+              salt: keccak256(salt),
+            });
+            
+            // Set constructor args: [mailboxAddress, inboxAddress]
+            contractArgs = [chainData.mailbox, inboxAddress];
+            console.log(`Setting HyperProver args for chain ${chainId}: [${chainData.mailbox}, ${inboxAddress}]`);
+          } else {
+            console.warn(`Cannot find Inbox data for HyperProver on chain ${chainId}, using default args`);
+            contractArgs = [chainData.mailbox, '0x0000000000000000000000000000000000000001'];
+          }
+        }
+        
+        // Update args in the contract copy
+        contractWithArgs = {
+          ...contract,
+          args: contractArgs
+        };
+        
+        // Generate the deployment bytecode with the updated args
+        const contractData = generateBytecodeDeployData({
+          value: 0n,
+          salt,
+          contract: contractWithArgs,
+        });
+        
+        // Store the generated data
+        deployedContracts[contractName] = {
+          args: contractArgs,
+          initCodeHash: contractData.initCodeHash,
+          encodedArgs: contractData.encodedArgs,
+          contractPath: contract.path,
+          deployBytecode: contractData.deployBytecode,
+        };
+        
+        console.log(`Successfully generated ${contractName} deployment data for chain ${chainId}`);
+      } catch (error) {
+        console.error(
+          `Error generating ${contractName} deployment data for chain ${chainId}:`,
+          error,
+        );
+      }
+    }
+    
+    // Store all contracts for this chain
+    deploymentData[chainId].contracts = deployedContracts;
   }
-
-  return deploymentData
+  
+  return deploymentData;
 }
 
 /**
@@ -349,84 +285,11 @@ export function saveDeploymentData(
 }
 
 /**
- * Saves verification data to a CSV file for contract verification
- * @param verificationData Array of verification data entries
- * @param outputPath The path to save the CSV file to
- */
-export function saveVerificationData(
-  verificationData: Array<{
-    chainId: string
-    contractAddress: string
-    contractPath: string
-    constructorArgs: string
-    environment: string
-  }>,
-  outputPath: string
-): void {
-  // Ensure directory exists
-  const directory = path.dirname(outputPath)
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true })
-    console.log(`Created directory: ${directory}`)
-  }
-
-  // Write the verification CSV header in Deploy.s.sol format
-  let csvContent = 'Environment,ChainID'
-
-  // Add contract names as columns
-  const uniqueContracts = [...new Set(verificationData.map(entry =>
-    entry.contractPath.split(':')[1] || entry.contractPath.split('/').pop() || ''
-  ))]
-
-  for (const contract of uniqueContracts) {
-    csvContent += `,${contract}`
-  }
-  csvContent += '\n'
-
-  // Group by environment and chainId
-  const groupedData: Record<string, Record<string, Record<string, string>>> = {}
-
-  for (const entry of verificationData) {
-    const envKey = entry.environment
-    const chainKey = entry.chainId
-    const contractName = entry.contractPath.split(':')[1] || entry.contractPath.split('/').pop() || ''
-
-    if (!groupedData[envKey]) {
-      groupedData[envKey] = {}
-    }
-
-    if (!groupedData[envKey][chainKey]) {
-      groupedData[envKey][chainKey] = {}
-    }
-
-    groupedData[envKey][chainKey][contractName] = entry.contractAddress
-  }
-
-  // Create rows for each environment and chain
-  for (const [env, chains] of Object.entries(groupedData)) {
-    for (const [chainId, contracts] of Object.entries(chains)) {
-      let row = `${env},${chainId}`
-
-      // Add each contract address (or 'undefined' if missing)
-      for (const contractName of uniqueContracts) {
-        row += `,${contracts[contractName] || 'undefined'}`
-      }
-
-      csvContent += row + '\n'
-    }
-  }
-
-  // Save to file, overwriting any existing content
-  fs.writeFileSync(outputPath, csvContent)
-  console.log(`Verification data saved to ${outputPath}`)
-}
-
-/**
  * Fetches chain IDs from the deployment data URL using fetch API
  * @returns Array of available chain IDs
  * @throws Error if unable to fetch or parse deployment data
  */
-export async function fetchChainIdsFromDeployData(): Promise<string[]> {
+export async function fetchDeployData(): Promise<FetchData> {
   // Get the URL from environment or use default
   const DEPLOY_DATA_URL = process.env.DEPLOY_DATA_URL ||
     "https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
@@ -449,7 +312,7 @@ export async function fetchChainIdsFromDeployData(): Promise<string[]> {
 
     if (chainIds.length > 0) {
       console.log(`Found ${chainIds.length} chain IDs in deployment data: ${chainIds.join(', ')}`)
-      return chainIds
+      return deployData
     } else {
       throw new Error('No chain IDs found in deployment data')
     }
