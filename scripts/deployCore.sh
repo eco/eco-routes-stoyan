@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#\!/usr/bin/env bash
 
 # Load environment variables from .env safely
 if [ -f .env ]; then
@@ -7,29 +7,34 @@ if [ -f .env ]; then
     set +a
 fi
 
-
 # Get the deployment data from the specified URL
-if [ -z "$DEPLOY_DATA_URL" ]; then
-    echo "❌ Error: DEPLOY_DATA_URL is not set in .env!"
+if [ -z "$CHAIN_DATA_URL" ]; then
+    echo "❌ Error: CHAIN_DATA_URL is not set in .env\!"
     exit 1
 fi
-DEPLOY_JSON=$(curl -s "$DEPLOY_DATA_URL")
+CHAIN_JSON=$(curl -s "$CHAIN_DATA_URL")
 
-# Ensure deploy data is pulled
-if [ -z "$DEPLOY_JSON" ]; then
-    echo "❌ Error: Could not get deployment data from URL: $DEPLOY_DATA_URL"
+# Ensure chain data is pulled
+if [ -z "$CHAIN_JSON" ]; then
+    echo "❌ Error: Could not get chain data from URL: $CHAIN_DATA_URL"
     exit 1
 fi
-echo "Deployment JSON loaded successfully"
+echo "Chain JSON loaded successfully"
 
+# Verify bytecode file exists
+if [ \! -f "$BYTECODE_PATH" ]; then
+    echo "❌ Error: Bytecode deployment file not found at $BYTECODE_PATH"
+    exit 1
+fi
+echo "Using bytecode file: $BYTECODE_PATH"
 
 PUBLIC_ADDRESS=$(cast wallet address --private-key "$PRIVATE_KEY")
 echo "Wallet Public Address: $PUBLIC_ADDRESS"
 
-CREATE_X_DEPLOYER_ADDRESS = '0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
-$CREATE_X_DEPLOYER_ADDRESS
+CREATE_X_DEPLOYER_ADDRESS='0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
+
 # Process each chain from the JSON data
-echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
+echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS= read -r entry; do
     CHAIN_ID=$(echo "$entry" | jq -r '.key')
     value=$(echo "$entry" | jq -c '.value')
 
@@ -49,26 +54,79 @@ echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
         exit 1
     fi
 
-    echo "🔄 Deploying contracts for Chain ID: $CHAIN_ID"
+    echo "🔄 Processing Chain ID: $CHAIN_ID with RPC URL: $RPC_URL"
 
+    # Check if CREATE_X_DEPLOYER is deployed on this chain
     code=$(cast code $CREATE_X_DEPLOYER_ADDRESS --rpc-url "$RPC_URL")
     if [ "$code" == "0x" ]; then
-        echo "❌ Error: CREATE_X_DEPLOYER_ADDRESS not deployed on: $CHAIN_ID"
+        echo "❌ Error: CREATE_X_DEPLOYER_ADDRESS not deployed on chain ID: $CHAIN_ID"
+        continue
     fi
 
-    # # IntentSource Deployment 
-    # code=$(cast code 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67 --rpc-url "$RPC_URL")
-    # if [ "$code" == "0x" ]; then
-    #     cast send $CREATE_X_DEPLOYER_ADDRESS  --rpc-url "$expanded_url" --private-key "$PRIVATE_KEY"
-    # fi
+    # Process each environment (default and pre) from the bytecode deployment file
+    jq -c 'keys[]' "$BYTECODE_PATH" | while IFS= read -r env_key; do
+        # Remove quotes from env_key
+        ENV_NAME=$(echo "$env_key" | tr -d '"')
+        echo "🔄 Deploying for environment: $ENV_NAME"
 
-    # # Inbox Deployment
-    # code=$(cast code 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67 --rpc-url "$RPC_URL")
-    # if [ "$code" == "0x" ]; then
-    #     cast send $CREATE_X_DEPLOYER_ADDRESS  --rpc-url "$expanded_url" --private-key "$PRIVATE_KEY"
-    # fi
+        # Access contracts in this environment
+        CONTRACT_DATA=$(jq -c ".$ENV_NAME.contracts" "$BYTECODE_PATH")
+        SALT=$(jq -r ".$ENV_NAME.salt" "$BYTECODE_PATH")
+        KECCAK_SALT=$(jq -r ".$ENV_NAME.keccakSalt" "$BYTECODE_PATH")
+        echo "  🔑 Using salt: $SALT"
+        
+        # Process each contract
+        echo "$CONTRACT_DATA" | jq -c 'keys[]' | while IFS= read -r contract_name; do
+            # Remove quotes from contract_name
+            CONTRACT_NAME=$(echo "$contract_name" | tr -d '"')
+            echo "  🔄 Processing contract: $CONTRACT_NAME"
+            
+            # Get initCodeHash and deploy bytecode
+            INIT_CODE_HASH=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.initCodeHash" "$BYTECODE_PATH")
+            if [ "$INIT_CODE_HASH" == "null" ]; then
+                echo "    ❌ Error: initCodeHash not found for $CONTRACT_NAME in $BYTECODE_PATH"
+                continue
+            fi
+            
+            # Get deployBytecode
+            DEPLOY_BYTECODE=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.deployBytecode" "$BYTECODE_PATH")
+            if [ "$DEPLOY_BYTECODE" == "null" || -z "$DEPLOY_BYTECODE" ]; then
+                echo "    ❌ Error: deployBytecode not found for $CONTRACT_NAME"
+                continue
+            fi
+            
+            # Compute the expected address using cast call to CREATE_X_DEPLOYER's computeCreate2Address function
+            echo "    🧮 Computing CREATE2 address for $CONTRACT_NAME..."
+            EXPECTED_ADDRESS=$(cast call $CREATE_X_DEPLOYER_ADDRESS "computeCreate2Address(bytes32,bytes32)(address)" "$KECCAK_SALT" "$INIT_CODE_HASH" --rpc-url "$RPC_URL")
+            echo "    🔍 Computed expected address: $EXPECTED_ADDRESS"
+            
+            # Check if contract is already deployed
+            code=$(cast code "$EXPECTED_ADDRESS" --rpc-url "$RPC_URL")
+            if [ "$code" == "0x" ]; then
+                echo "    🔄 Deploying $CONTRACT_NAME to expected address: $EXPECTED_ADDRESS"
+                
+                # Deploy contract using CREATE_X_DEPLOYER_ADDRESS
+                # The cast send command sends the deployBytecode to the CREATE_X_DEPLOYER
+                cast send $CREATE_X_DEPLOYER_ADDRESS $DEPLOY_BYTECODE --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY"
+                
+                if [ $? -eq 0 ]; then
+                    echo "    ✅ Successfully deployed $CONTRACT_NAME on chain ID: $CHAIN_ID"
+                    
+                    # Verify deployment worked by checking code at expected address
+                    code=$(cast code "$EXPECTED_ADDRESS" --rpc-url "$RPC_URL")
+                    if [ "$code" == "0x" ]; then
+                        echo "    ❌ Deployment verification failed for $CONTRACT_NAME. No code at expected address."
+                    else
+                        echo "    ✅ Deployment verified for $CONTRACT_NAME at $EXPECTED_ADDRESS"
+                    fi
+                else
+                    echo "    ❌ Failed to deploy $CONTRACT_NAME on chain ID: $CHAIN_ID"
+                fi
+            else
+                echo "    ✅ $CONTRACT_NAME already deployed at $EXPECTED_ADDRESS"
+            fi
+        done
+    done
 
-
-
-    echo "✅ Deployment on Chain ID: $CHAIN_ID completed!"
+    echo "✅ Deployment on Chain ID: $CHAIN_ID completed\!"
 done

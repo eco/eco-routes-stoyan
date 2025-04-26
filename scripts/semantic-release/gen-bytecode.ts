@@ -122,12 +122,6 @@ export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): a
         initCodeHash: contractData.initCodeHash,
         encodedArgs: contractData.encodedArgs,
         contractPath: contract.path,
-        expectedAddress: getContractAddress({
-          bytecode: contractData.deployBytecode,
-          from: CREATE_X_DEPLOYER_ADDRESS,
-          opcode: 'CREATE2',
-          salt: keccak256(contractData.salt)
-        }),
         deployBytecode: contractData.deployBytecode,
       }
 
