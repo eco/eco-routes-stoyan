@@ -28,6 +28,24 @@ if [ \! -f "$BYTECODE_PATH" ]; then
 fi
 echo "Using bytecode file: $BYTECODE_PATH"
 
+# Create output directories for deployment verification data
+DEPLOYMENT_DATA_DIR="out"
+mkdir -p $DEPLOYMENT_DATA_DIR
+echo "Created deployment data directory: $DEPLOYMENT_DATA_DIR"
+
+# File to store all deployment data for verification
+DEPLOYED_CONTRACTS_FILE="$DEPLOYMENT_DATA_DIR/deployed_contracts.csv"
+
+# Delete the deployment contracts file if it exists
+if [ -f "$DEPLOYED_CONTRACTS_FILE" ]; then
+    echo "🗑️ Removing existing deployment data file: $DEPLOYED_CONTRACTS_FILE"
+    rm "$DEPLOYED_CONTRACTS_FILE"
+fi
+
+# Create header for CSV file
+echo "ChainID,Environment,ContractName,ContractAddress,ContractPath" > $DEPLOYED_CONTRACTS_FILE
+echo "📝 Created new deployment data file with header"
+
 PUBLIC_ADDRESS=$(cast wallet address --private-key "$PRIVATE_KEY")
 echo "Wallet Public Address: $PUBLIC_ADDRESS"
 
@@ -81,8 +99,15 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
             CONTRACT_NAME=$(echo "$contract_name" | tr -d '"')
             echo "  🔄 Processing contract: $CONTRACT_NAME"
             
-            # Get initCodeHash and deploy bytecode
+            # Get contract path and initCodeHash
+            CONTRACT_PATH=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.contractPath" "$BYTECODE_PATH")
             INIT_CODE_HASH=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.initCodeHash" "$BYTECODE_PATH")
+            
+            if [[ "$CONTRACT_PATH" == "null" || -z "$CONTRACT_PATH" ]]; then
+                echo "    ❌ Error: contractPath not found for $CONTRACT_NAME"
+                continue
+            fi
+            
             if [ "$INIT_CODE_HASH" == "null" ]; then
                 echo "    ❌ Error: initCodeHash not found for $CONTRACT_NAME in $BYTECODE_PATH"
                 continue
@@ -90,7 +115,7 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
             
             # Get deployBytecode
             DEPLOY_BYTECODE=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.deployBytecode" "$BYTECODE_PATH")
-            if [ "$DEPLOY_BYTECODE" == "null" || -z "$DEPLOY_BYTECODE" ]; then
+            if [[ "$DEPLOY_BYTECODE" == "null" || -z "$DEPLOY_BYTECODE" ]]; then
                 echo "    ❌ Error: deployBytecode not found for $CONTRACT_NAME"
                 continue
             fi
@@ -116,17 +141,39 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
                     code=$(cast code "$EXPECTED_ADDRESS" --rpc-url "$RPC_URL")
                     if [ "$code" == "0x" ]; then
                         echo "    ❌ Deployment verification failed for $CONTRACT_NAME. No code at expected address."
-                    else
+                    else 
                         echo "    ✅ Deployment verified for $CONTRACT_NAME at $EXPECTED_ADDRESS"
+                        
+                        # Record successful deployment in the deployment data files
+                        echo "$CHAIN_ID,$ENV_NAME,$CONTRACT_NAME,$EXPECTED_ADDRESS,$CONTRACT_PATH" >> $DEPLOYED_CONTRACTS_FILE
+                        
+                        echo "    📝 Recorded deployment data for verification"
                     fi
-                else
+                else 
                     echo "    ❌ Failed to deploy $CONTRACT_NAME on chain ID: $CHAIN_ID"
                 fi
-            else
+            else 
                 echo "    ✅ $CONTRACT_NAME already deployed at $EXPECTED_ADDRESS"
+                
+                # Record existing deployment in the deployment data files
+                echo "$CHAIN_ID,$ENV_NAME,$CONTRACT_NAME,$EXPECTED_ADDRESS,$CONTRACT_PATH" >> $DEPLOYED_CONTRACTS_FILE
+                
+                echo "    📝 Recorded existing deployment data for verification"
             fi
         done
     done
 
     echo "✅ Deployment on Chain ID: $CHAIN_ID completed\!"
 done
+
+# Display summary of deployments
+if [ -f "$DEPLOYED_CONTRACTS_FILE" ]; then
+    DEPLOYMENT_COUNT=$(grep -c "^" "$DEPLOYED_CONTRACTS_FILE")
+    DEPLOYMENT_COUNT=$((DEPLOYMENT_COUNT - 1))  # Subtract header line
+    echo ""
+    echo "📊 Deployment Summary:"
+    echo "Total contracts deployed/recorded: $DEPLOYMENT_COUNT"
+    echo "Deployment data saved to: $DEPLOYED_CONTRACTS_FILE"
+    echo ""
+    echo "To verify these contracts, run: ./scripts/verifyCore.sh"
+fi
