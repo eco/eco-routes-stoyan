@@ -10,7 +10,7 @@ export const PATHS = {
 
   // Deployment related paths
   OUTPUT_DIR: 'out',
-  DEPLOYMENT_RESULTS_FILE: 'deployment-results.csv',
+  DEPLOYMENT_RESULTS_FILE: 'deployed_contracts.csv',
   DEPLOYMENT_BYTECODE_FILE: 'deployBytecode.json',
   DEPLOYED_ADDRESSES_JSON: 'build/deployAddresses.json',
   DEPLOY_SCRIPT: 'scripts/MultiDeploy.sh',
