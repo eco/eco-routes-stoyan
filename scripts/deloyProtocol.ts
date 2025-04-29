@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { addJsonAddress } from './deploy/addresses'
 import { ContractTransactionResponse, Signer } from 'ethers'
-import { Deployer, Inbox, Prover } from '../typechain-types'
+import { Deployer, Prover } from '../typechain-types'
 import { Address, Hex, zeroAddress } from 'viem'
 import {
   isZeroAddress,
@@ -233,23 +233,6 @@ export async function deployInbox(
     deploySalt,
     ethers.keccak256(inboxTx.data),
   ) as Hex
-
-  // on testnet inboxOwner is the deployer, just to make things easier
-  const inbox: Inbox = (await retryFunction(async () => {
-    return await ethers.getContractAt(
-      contractName,
-      inboxAddress,
-      inboxOwnerSigner,
-    )
-  }, ethers.provider)) as any as Inbox
-
-  await retryFunction(async () => {
-    return await inbox
-      .connect(inboxOwnerSigner)
-      .setMailbox(deployNetwork.hyperlaneMailboxAddress, {
-        gasLimit: deployNetwork.gasLimit,
-      })
-  }, ethers.provider)
 
   console.log(`${contractName} implementation deployed to: `, inboxAddress)
   addJsonAddress(deployNetwork, `${contractName}`, inboxAddress)

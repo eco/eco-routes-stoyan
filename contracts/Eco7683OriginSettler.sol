@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 
 import {OnchainCrossChainOrder, ResolvedCrossChainOrder, GaslessCrossChainOrder, Output, FillInstruction} from "./types/ERC7683.sol";
 import {IOriginSettler} from "./interfaces/ERC7683/IOriginSettler.sol";
-import {Intent, Reward, Route, Call, TokenAmount} from "./types/Intent.sol";
+import {Intent, Reward, Route, TokenAmount} from "./types/Intent.sol";
 import {OnchainCrosschainOrderData, GaslessCrosschainOrderData, ONCHAIN_CROSSCHAIN_ORDER_DATA_TYPEHASH, GASLESS_CROSSCHAIN_ORDER_DATA_TYPEHASH} from "./types/EcoERC7683.sol";
 import {IntentSource} from "./IntentSource.sol";
 import {Semver} from "./libs/Semver.sol";
