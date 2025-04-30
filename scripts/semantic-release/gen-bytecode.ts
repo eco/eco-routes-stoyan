@@ -66,12 +66,10 @@ export async function generateDeploymentFile(
   // Fetch chain IDs from the deployment data URL
   // If this fails, it will throw an error that should propagate up
   const deployData = await fetchDeployData()
-  const chainIDs = Object.keys(deployData)
-  console.log(`Using chain IDs for deployment: ${chainIDs.join(', ')}`)
 
   // Generate bytecode deployment data for each salt
   for (const salt of salts) {
-    console.log(`Generating deployment data for salt ${salt.name}...`)
+    console.log(`Generating deployment data for salt ${JSON.stringify(salt)}...`)
     const data = generateMultipleDeploymentData(salt.value, deployData)
     deploymentData[salt.name] = data
   }
