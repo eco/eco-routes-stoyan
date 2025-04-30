@@ -88,6 +88,9 @@ jobs:
         uses: borales/actions-yarn@v5
         with:
           cmd: install
+          
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Build Project
         uses: borales/actions-yarn@v5
