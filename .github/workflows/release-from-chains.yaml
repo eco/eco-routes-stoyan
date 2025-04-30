@@ -1,8 +1,9 @@
 name: Trigger Release from eco-chains
 
-# This workflow is triggered in two ways:
+# This workflow is triggered in three ways:
 # 1. Automatically when a tag is pushed to eco-chains repository
 # 2. Manually via the GitHub UI with environment selection
+# 3. Manually via the GitHub UI with a custom version string
 on:
   repository_dispatch:
     types: [eco-chains-tag-pushed]
@@ -16,6 +17,10 @@ on:
         options:
           - testnet
           - mainnet
+      version:
+        description: "Custom semantic version (optional)"
+        required: false
+        type: string
 
 jobs:
   # First job: Fetch secrets from AWS Secrets Manager
@@ -109,6 +114,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           ECO_CHAINS_TAG: ${{ github.event.client_payload.tag }}
+          CUSTOM_VERSION: ${{ github.event.inputs.version }}
+          RELEASE_VERSION: ${{ github.event.inputs.version || github.event.client_payload.tag }}
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           CHAIN_DATA_URL: ${{ secrets.CHAIN_DATA_URL }}
@@ -117,6 +124,6 @@ jobs:
           cmd: semantic:pub
           # echo "Printing contract verification keys"
           # echo "$CONTRACT_VERIFICATION_KEYS"
-          # echo "Processing tag from eco-chains: $ECO_CHAINS_TAG"
+          # echo "Processing tag from eco-chains: $ECO_CHAINS_TAG or custom version: $CUSTOM_VERSION"
           # Run semantic-release to create a new release based on commits
           # npx semantic-release

@@ -44,7 +44,16 @@ export async function version(
     return
   }
 
-  const version = nextRelease.version
+  // Use the custom RELEASE_VERSION environment variable if available
+  const environmentVersion = process.env.RELEASE_VERSION
+  const version = environmentVersion || nextRelease.version
+  
+  if (environmentVersion) {
+    logger.log(`Using custom version from environment: ${version}`)
+  } else {
+    logger.log(`Using semantically determined version: ${version}`)
+  }
+  
   logger.log(`Updating version information to ${version}`)
 
   try {

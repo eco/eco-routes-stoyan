@@ -38,7 +38,23 @@ export async function publish(
   context: SemanticContext,
 ): Promise<any> {
   const { nextRelease, logger, cwd } = context
-  const dryRun = !shouldWePublish(nextRelease?.version || '')
+  
+  // Use the custom RELEASE_VERSION environment variable if available
+  const environmentVersion = process.env.RELEASE_VERSION
+  let version = nextRelease?.version || ''
+  
+  // Update the version if using a custom one
+  if (environmentVersion) {
+    version = environmentVersion
+    logger.log(`Using custom version from environment: ${version}`)
+    
+    // Update nextRelease if it exists
+    if (nextRelease) {
+      nextRelease.version = version
+    }
+  }
+  
+  const dryRun = !shouldWePublish(version)
   if (dryRun) {
     logger.log(
       `DRY RUN: Skipping actual npm publish. Would have published packages to npm.`,
@@ -48,8 +64,7 @@ export async function publish(
   try {
     // Determine the tag to use for publishing
     // Use 'latest' for stable releases, 'beta' for prerelease versions
-    const tag = nextRelease?.type === 'prerelease' ? 'beta' : 'latest'
-    const version = nextRelease?.version || ''
+    const tag = nextRelease?.type === 'prerelease' || (version && version.includes('-')) ? 'beta' : 'latest'
 
     logger.log(`Publishing packages version ${version} with tag ${tag}`)
 

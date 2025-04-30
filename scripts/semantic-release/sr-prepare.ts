@@ -66,8 +66,18 @@ export async function prepare(
     logger.log('No release detected, skipping contract deployment')
     return
   }
+  
+  // Use the custom RELEASE_VERSION environment variable if available
+  const environmentVersion = process.env.RELEASE_VERSION
+  const version = environmentVersion || nextRelease.version
+  
+  // Update the nextRelease object to use our custom version
+  if (environmentVersion) {
+    nextRelease.version = environmentVersion
+    logger.log(`Using custom version from environment: ${version}`)
+  }
 
-  logger.log(`Preparing to deploy contracts for version ${nextRelease.version}`)
+  logger.log(`Preparing to deploy contracts for version ${version}`)
 
   // Extract version components
   const packageJson = JSON.parse(
