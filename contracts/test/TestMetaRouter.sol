@@ -2,11 +2,11 @@
 /* solhint-disable gas-custom-errors */
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
-import {IMessageRecipient} from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
+import {IMetalayerRecipient, ReadOperation} from "@metalayer/contracts/src/interfaces/IMetalayerRecipient.sol";
 import {TypeCasts} from "@hyperlane-xyz/core/contracts/libs/TypeCasts.sol";
 import {IPostDispatchHook} from "@hyperlane-xyz/core/contracts/interfaces/hooks/IPostDispatchHook.sol";
 
-contract TestMailbox {
+contract TestMetaRouter {
     using TypeCasts for bytes32;
     using TypeCasts for address;
 
@@ -28,6 +28,11 @@ contract TestMailbox {
 
     uint256 public constant FEE = 100000;
 
+    enum FinalityState {
+        INSTANT,
+        FINAL
+    }
+
     constructor(address _processor) {
         processor = _processor;
     }
@@ -35,20 +40,18 @@ contract TestMailbox {
     function dispatch(
         uint32 _destinationDomain,
         bytes32 _recipientAddress,
-        bytes calldata _messageBody,
-        bytes calldata _metadata,
-        IPostDispatchHook _relayer
-    ) public payable returns (uint256) {
+        ReadOperation[] memory _reads,
+        bytes memory _writeCallData,
+        FinalityState _finalityState,
+        uint256 _gasLimit
+    ) external payable returns (uint256) {
         destinationDomain = _destinationDomain;
         recipientAddress = _recipientAddress;
-        messageBody = _messageBody;
-        metadata = _metadata;
-        relayer = address(_relayer);
-
-        dispatchedWithRelayer = true;
+        messageBody = _writeCallData;
+        dispatched = true;
 
         if (processor != address(0)) {
-            process(_messageBody);
+            process(_writeCallData);
         }
 
         if (msg.value < FEE) {
@@ -58,33 +61,24 @@ contract TestMailbox {
         return (msg.value);
     }
 
-    function process(bytes calldata _msg) public {
-        IMessageRecipient(recipientAddress.bytes32ToAddress()).handle(
+    function process(bytes memory _msg) public {
+        ReadOperation[] memory readOps;
+        bytes[] memory readResponses;
+
+        IMetalayerRecipient(recipientAddress.bytes32ToAddress()).handle(
             uint32(block.chainid),
             msg.sender.addressToBytes32(),
-            _msg
+            _msg,
+            readOps,
+            readResponses
         );
     }
 
     function quoteDispatch(
         uint32,
         bytes32,
-        bytes calldata
-    ) public pure returns (bytes32) {
-        return bytes32(FEE);
-    }
-
-    function quoteDispatch(
-        uint32,
-        bytes32,
-        bytes calldata,
-        bytes calldata,
-        address
-    ) public pure returns (bytes32) {
-        return bytes32(FEE);
-    }
-
-    function defaultHook() public pure returns (IPostDispatchHook) {
-        return IPostDispatchHook(address(0));
+        bytes memory
+    ) public pure returns (uint256) {
+        return FEE;
     }
 }

@@ -13,17 +13,17 @@
  */
 
 import { prepare, SemanticContext, SemanticPluginConfig } from './sr-prepare'
+import { publish } from './sr-publish'
 import { verifyConditions } from './sr-verify-conditions'
 import { version } from './sr-version'
-import { publish } from './sr-publish'
 
 async function main() {
   // Create plugin config and context
   const pluginConfig: SemanticPluginConfig = {}
   const context: SemanticContext = {
     nextRelease: {
-      version: '0.0.5',
-      gitTag: 'v0.0.5',
+      version: '2.0.1-beta.0',
+      gitTag: 'v2.0.1-beta.0',
       notes: 'Test release',
       type: 'patch',
     },
@@ -51,7 +51,7 @@ async function main() {
 
     // 4. Finally run publish phase (publish to npm)
     console.log('\n--- Starting publish phase ---')
-    // const result = await publish(pluginConfig, context)
+    const result = await publish(pluginConfig, context)
 
     console.log('\n✅ Semantic release simulation completed successfully')
     return 'result'

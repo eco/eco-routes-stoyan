@@ -1,6 +1,6 @@
 {
   "name": "@eco-foundation/eco-routes-stoyan",
-  "version": "0.0.5",
+  "version": "2.0.1-beta.0",
   "description": "The Eco Routes Protocol is a decentralized intent based system that allows users to submit their intent to the network and have it fulfilled by a solver on the destination rollup of their choise.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -139,6 +139,7 @@
     "@axelar-network/axelar-gmp-sdk-solidity": "^6.0.4",
     "@hyperlane-xyz/registry": "^4.2.0",
     "@hyperlane-xyz/sdk": "^5.1.0",
+    "@metalayer/contracts": "^0.0.7",
     "@openzeppelin/contracts": "^5.0.2",
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "viem": "^2.22.21"

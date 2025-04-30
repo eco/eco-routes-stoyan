@@ -105,6 +105,7 @@ output/proofGenerationOutput.json
 .openzeppelin/.session
 
 .idea/
+eco_createx_deploy
 
 broadcast/
 
