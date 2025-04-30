@@ -15,10 +15,14 @@ export const PATHS = {
   DEPLOYED_ADDRESSES_JSON: 'build/deployAddresses.json',
   DEPLOY_SCRIPT: 'scripts/MultiDeploy.sh',
   DEPLOY_SH_SCRIPT: 'scripts/deploy.sh',
+  DEPLOY_BYTECODE_SCRIPT: 'scripts/deployCore.sh',
 
   // Verification related paths
   VERIFICATION_SCRIPT: 'scripts/Verify.sh',
   VERIFICATION_KEYS_FILE: 'verification-keys.json',
+
+  //Chains
+  DEFAULT_CHAIN_DATA_URL : "https://raw.githubusercontent.com/eco/eco-chains/refs/heads/main/src/assets/chain.json",
 
   // Package related
   PACKAGE_JSON: 'package.json',

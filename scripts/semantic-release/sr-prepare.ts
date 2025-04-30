@@ -24,7 +24,7 @@ import { Logger } from './helpers'
 import { promisify } from 'util'
 import { exec } from 'child_process'
 import { verifyContracts } from './verify-contracts'
-import { generateMultipleDeploymentData } from './gen-bytecode'
+
 dotenv.config()
 
 const execPromise = promisify(exec)

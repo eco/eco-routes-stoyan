@@ -11,6 +11,7 @@ import {
 } from 'viem'
 import fs from 'fs'
 import path from 'path'
+import { PATHS } from './constants'
 
 
 type FetchData = {
@@ -137,7 +138,6 @@ export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): a
   // Store all contracts for this chain
   deploymentData.contracts = deployedContracts
 
-
   return deploymentData
 }
 
@@ -247,16 +247,16 @@ export function saveDeploymentData(
  */
 export async function fetchDeployData(): Promise<string[]> {
   // Get the URL from environment or use default
-  const DEPLOY_DATA_URL = process.env.DEPLOY_DATA_URL ||
-    "https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
+  const CHAIN_DATA_URL = process.env.CHAIN_DATA_URL || PATHS.DEFAULT_CHAIN_DATA_URL
+    
 
-  console.log(`Fetching deployment data from ${DEPLOY_DATA_URL}...`)
+  console.log(`Fetching deployment data from ${CHAIN_DATA_URL}...`)
 
   try {
     // Use native fetch API (available in Node.js v18+)
 
     // Fetch the data
-    const response = await fetch(DEPLOY_DATA_URL)
+    const response = await fetch(CHAIN_DATA_URL)
 
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`)
