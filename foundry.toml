@@ -5,3 +5,4 @@ out = "out"
 libs = ["lib"]
 optimizer = true
 runs = 1000000
+via_ir = true
