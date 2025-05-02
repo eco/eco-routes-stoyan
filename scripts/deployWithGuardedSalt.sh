@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # deployWithGuardedSalt.sh
-# This script deploys a contract with a guarded salt using Foundry's forge.
+# This script deploys a contract with a guarded salt using the CreateX contract (https://github.com/pcaversaccio/createx).
 # The guarded salt is generated using the deployer's address, a flag byte, and a hash of the original salt.
 # This ensures that your contract cannot be redeployed with the same salt by another account, providing a layer of protection against redeployment attacks.
 # It requires the following environment variables:
@@ -9,6 +9,7 @@
 # - PRIVATE_KEY: The private key of the deployer.
 # - SALT: The original salt to be used for deployment.
 # - RPC_URL: The RPC URL of the Ethereum network to deploy to.
+# - CREATEX_ADDRESS: The address of the deployed CreateX contract.
 # Usage: ./deployWithGuardedSalt.sh
 
 # Load environment variables from .env safely
