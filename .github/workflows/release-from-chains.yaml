@@ -28,7 +28,7 @@ jobs:
     name: Fetch AWS Secrets
     runs-on: ubuntu-latest
     # Use environment from manual trigger or default to 'testnet'
-    environment: ${{ github.event.inputs.environment || 'testnet' }}
+    environment: ${{ github.event.inputs.environment || github.event.client_payload.environment || 'testnet' }}
     outputs:
       secrets-ready: ${{ steps.fetch-secrets.outputs.success }}
     permissions:
