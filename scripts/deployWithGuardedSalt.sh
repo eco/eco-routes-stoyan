@@ -79,7 +79,7 @@ GUARDED_SALT="0x${ADDRESS_HEX}${FLAG_BYTE}${TRUNCATED_SALT_HASH}"
 echo "Original salt: $SALT"
 echo "Guarded salt: $GUARDED_SALT"
 
-# Deploy the contract using CreateX's deployCreate2 function
+# Deploy the contract using CreateX's deployCreate3 function
 echo "Deploying contract with guarded salt via CreateX..."
 TX_HASH=$(cast send --rpc-url "$RPC_URL" \
   --private-key "$PRIVATE_KEY" \

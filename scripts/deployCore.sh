@@ -52,13 +52,13 @@ echo "Wallet Public Address: $PUBLIC_ADDRESS"
 CREATE_X_DEPLOYER_ADDRESS='0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
 
 # Process each chain from the JSON data
-echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS= read -r entry; do
+echo "$CHAIN_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
     CHAIN_ID=$(echo "$entry" | jq -r '.key')
     value=$(echo "$entry" | jq -c '.value')
 
     RPC_URL=$(echo "$value" | jq -r '.url')
 
-    if [[ "$RPC_URL" == "null" || -z "$RPC_URL" ]]; then
+    if [ "$RPC_URL" = "null" ] || [ -z "$RPC_URL" ]; then
         echo "⚠️  Warning: Missing required data for Chain ID $CHAIN_ID. Skipping..."
         continue
     fi
@@ -67,7 +67,7 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
     RPC_URL=$(eval echo "$RPC_URL")
     
     # Check for API keys in URL
-    if [[ "$RPC_URL" == *"${ALCHEMY_API_KEY}"* && -z "$ALCHEMY_API_KEY" ]]; then
+    if [ -z "$ALCHEMY_API_KEY" ] && echo "$RPC_URL" | grep -q "${ALCHEMY_API_KEY}"; then
         echo "❌ Error: ALCHEMY_API_KEY is required but not set."
         exit 1
     fi
@@ -76,7 +76,7 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
 
     # Check if CREATE_X_DEPLOYER is deployed on this chain
     code=$(cast code $CREATE_X_DEPLOYER_ADDRESS --rpc-url "$RPC_URL")
-    if [ "$code" == "0x" ]; then
+    if [ "$code" = "0x" ]; then
         echo "❌ Error: CREATE_X_DEPLOYER_ADDRESS not deployed on chain ID: $CHAIN_ID"
         continue
     fi
@@ -103,19 +103,19 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
             CONTRACT_PATH=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.contractPath" "$BYTECODE_PATH")
             INIT_CODE_HASH=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.initCodeHash" "$BYTECODE_PATH")
             
-            if [[ "$CONTRACT_PATH" == "null" || -z "$CONTRACT_PATH" ]]; then
+            if [ "$CONTRACT_PATH" = "null" ] || [ -z "$CONTRACT_PATH" ]; then
                 echo "    ❌ Error: contractPath not found for $CONTRACT_NAME"
                 continue
             fi
             
-            if [ "$INIT_CODE_HASH" == "null" ]; then
+            if [ "$INIT_CODE_HASH" = "null" ]; then
                 echo "    ❌ Error: initCodeHash not found for $CONTRACT_NAME in $BYTECODE_PATH"
                 continue
             fi
             
             # Get deployBytecode
             DEPLOY_BYTECODE=$(jq -r ".$ENV_NAME.contracts.$CONTRACT_NAME.deployBytecode" "$BYTECODE_PATH")
-            if [[ "$DEPLOY_BYTECODE" == "null" || -z "$DEPLOY_BYTECODE" ]]; then
+            if [ "$DEPLOY_BYTECODE" = "null" ] || [ -z "$DEPLOY_BYTECODE" ]; then
                 echo "    ❌ Error: deployBytecode not found for $CONTRACT_NAME"
                 continue
             fi
@@ -127,7 +127,7 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
             
             # Check if contract is already deployed
             code=$(cast code "$EXPECTED_ADDRESS" --rpc-url "$RPC_URL")
-            if [ "$code" == "0x" ]; then
+            if [ "$code" = "0x" ]; then
                 echo "    🔄 Deploying $CONTRACT_NAME to expected address: $EXPECTED_ADDRESS"
                 
                 # Deploy contract using CREATE_X_DEPLOYER_ADDRESS
@@ -139,7 +139,7 @@ echo "$CHAIN_JSON" < /dev/null  < /dev/null |  jq -c 'to_entries[]' | while IFS=
                     
                     # Verify deployment worked by checking code at expected address
                     code=$(cast code "$EXPECTED_ADDRESS" --rpc-url "$RPC_URL")
-                    if [ "$code" == "0x" ]; then
+                    if [ "$code" = "0x" ]; then
                         echo "    ❌ Deployment verification failed for $CONTRACT_NAME. No code at expected address."
                     else 
                         echo "    ✅ Deployment verified for $CONTRACT_NAME at $EXPECTED_ADDRESS"
