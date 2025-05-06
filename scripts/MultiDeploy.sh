@@ -14,16 +14,16 @@ if [ -z "$RESULTS_FILE" ]; then
 fi
 
 # Get the deployment data from the specified URL
-DEPLOY_DATA_URL="https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
-if [ -z "$DEPLOY_DATA_URL" ]; then
-    echo "❌ Error: DEPLOY_DATA_URL is not set in .env!"
+# CHAIN_DATA_URL="https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
+if [ -z "$CHAIN_DATA_URL" ]; then
+    echo "❌ Error: CHAIN_DATA_URL is not set in .env!"
     exit 1
 fi
-DEPLOY_JSON=$(curl -s "$DEPLOY_DATA_URL")
+DEPLOY_JSON=$(curl -s "$CHAIN_DATA_URL")
 
 # Ensure deploy data is pulled
 if [ -z "$DEPLOY_JSON" ]; then
-    echo "❌ Error: Could not get deployment data from URL: $DEPLOY_DATA_URL"
+    echo "❌ Error: Could not get deployment data from URL: $CHAIN_DATA_URL"
     exit 1
 fi
 echo "Deployment JSON loaded successfully"
