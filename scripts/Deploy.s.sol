@@ -84,13 +84,9 @@ contract Deploy is Script {
 
         // Deploy Inbox - using a code block to manage variable lifetimes
         {
-            bytes memory inboxBytecode = abi.encodePacked(
-                type(Inbox).creationCode
-            );
-
             bool wasInboxDeployed;
             (ctx.inbox, wasInboxDeployed) = deployWithCreate3(
-                inboxBytecode,
+                type(Inbox).creationCode,
                 ctx.deployer,
                 ctx.inboxSalt
             );
@@ -101,7 +97,7 @@ contract Deploy is Script {
         // Deploy HyperProver - using a code block to manage variable lifetimes
         {
             address hyperProverPreviewAddr = create3Deployer.deployedAddress(
-                0x00, // Bytecode isn't used to determine the deployed address
+                bytes(""), // Bytecode isn't used to determine the deployed address
                 ctx.deployer,
                 ctx.hyperProverSalt
             );
