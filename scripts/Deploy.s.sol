@@ -61,7 +61,7 @@ contract Deploy is Script {
         ctx.hyperProverSalt = getContractSalt(ctx.salt, "HYPER_PROVER");
 
         vm.startBroadcast();
-        
+
         // Deploy deployer if it hasn't been deployed
         if (!isDeployed(address(create3Deployer))) {
             deployCreate3Deployer();
@@ -73,10 +73,8 @@ contract Deploy is Script {
 
         // Deploy IntentSource - using a code block to manage variable lifetimes
         {
-            bool deployed;
-            (ctx.intentSource, deployed) = deployWithCreate3(
+            (ctx.intentSource) = deployWithCreate2(
                 type(IntentSource).creationCode,
-                ctx.deployer,
                 ctx.intentSourceSalt
             );
             console.log("IntentSource :", ctx.intentSource);
@@ -84,10 +82,8 @@ contract Deploy is Script {
 
         // Deploy Inbox - using a code block to manage variable lifetimes
         {
-            bool wasInboxDeployed;
-            (ctx.inbox, wasInboxDeployed) = deployWithCreate3(
+            (ctx.inbox) = deployWithCreate2(
                 type(Inbox).creationCode,
-                ctx.deployer,
                 ctx.inboxSalt
             );
 
@@ -173,12 +169,53 @@ contract Deploy is Script {
             );
     }
 
-    function deployCreate3Deployer() internal {
-        address deployedCreate3Deployer = create2Factory.deploy(
-            CREATE3_DEPLOYER_BYTECODE,
-            bytes32(0)
+    function deployWithCreate2(
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal returns (address deployedContract) {
+        // Calculate the contract address that will be deployed
+        deployedContract = predictCreate2Address(bytecode, salt);
+        
+        // Check if contract is already deployed
+        if (isDeployed(deployedContract)) {
+            console.log("Contract already deployed at address:", deployedContract);
+            return deployedContract;
+        }
+        
+        // Deploy the contract if not already deployed
+        address justDeployedAddr = create2Factory.deploy(bytecode, salt);
+        require(
+            deployedContract == justDeployedAddr,
+            "Expected address does not match the deployed address"
         );
+        require(isDeployed(deployedContract), "Contract did not get deployed");
+        
+        return deployedContract;
+    }
+    
+    function predictCreate2Address(
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal pure returns (address) {
+        return 
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                bytes1(0xff),
+                                address(create2Factory),
+                                salt,
+                                keccak256(bytecode)
+                            )
+                        )
+                    )
+                )
+            );
+    }
 
+    function deployCreate3Deployer() internal {
+        address deployedCreate3Deployer = deployWithCreate2(CREATE3_DEPLOYER_BYTECODE, bytes32(0));
         require(
             deployedCreate3Deployer == address(create3Deployer),
             "Unexpected deployer"
