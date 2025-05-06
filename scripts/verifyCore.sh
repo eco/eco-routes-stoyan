@@ -9,7 +9,7 @@ fi
 
 # Define paths
 DEPLOYMENT_DATA_DIR="out"
-DEPLOYED_CONTRACTS_FILE="$DEPLOYMENT_DATA_DIR/deployed_contracts.csv"
+DEPLOYED_CONTRACTS_FILE="$RESULTS_FILE"
 VERIFICATION_KEYS_FILE="verification-keys.json"
 
 # Verify deployment data exists

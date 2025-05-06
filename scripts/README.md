@@ -27,6 +27,10 @@ ROUTER=<Optional: Router contract address for MetaProver>
 
 # For deployCore.sh
 BYTECODE_PATH=<Path to bytecode JSON file>
+
+# For VerifyResults.sh
+VERIFICATION_KEYS_FILE=<Path to verification keys JSON file>
+CONTRACT_VERIFICATION_KEYS=<Optional: JSON string of verification keys>
 ```
 
 ### Account Funding
@@ -78,13 +82,30 @@ This Foundry script handles the actual contract deployments using CREATE2/CREATE
 
 The script logs all deployed contract addresses and generates verification data.
 
+### 4. VerifyResults.sh
+
+This script verifies all contracts deployed by MultiDeploy.sh on their respective block explorers:
+
+```bash
+./scripts/VerifyResults.sh
+```
+
+The script:
+- Reads deployment data from RESULTS_FILE
+- Uses verification API keys from VERIFICATION_KEYS_FILE
+- Verifies each contract on the appropriate block explorer
+- Supports constructor arguments stored in the deployment data
+- Automatically retries failed verifications
+
 ## Deployment Process
 
 Follow these steps for a complete deployment:
 
 1. Configure your `.env` file with all required environment variables
-2. Run `./scripts/deploySingletonFactory.sh` to ensure the Singleton Factory is deployed
-3. Run `./scripts/MultiDeploy.sh` to deploy all contracts across chains
+2. Create a verification keys file (see `verification-keys-example.json`)
+3. Run `./scripts/deploySingletonFactory.sh` to ensure the Singleton Factory is deployed 
+4. Run `./scripts/MultiDeploy.sh` to deploy all contracts across chains
+5. Run `./scripts/VerifyResults.sh` to verify the deployed contracts
 
 ## Chain Data JSON Format
 
@@ -120,3 +141,26 @@ Each entry contains:
 - The same SALT value ensures consistent addresses across all environments
 - Contract addresses are predictable and can be computed before deployment
 - All scripts are idempotent - running them multiple times will not redeploy existing contracts
+
+## Verification Keys Format
+
+The VERIFICATION_KEYS_FILE should contain a JSON object with chain IDs as keys and API keys as values:
+
+```json
+{
+  "1": "YOUR_ETHERSCAN_API_KEY",
+  "10": "YOUR_OPTIMISM_API_KEY",
+  "56": "YOUR_BSCSCAN_API_KEY",
+  "137": "YOUR_POLYGONSCAN_API_KEY",
+  "43114": "YOUR_AVALANCHE_API_KEY",
+  "42161": "YOUR_ARBISCAN_API_KEY"
+}
+```
+
+Each chain requires its own specific API key for the relevant block explorer:
+- Chain ID 1: Etherscan API key
+- Chain ID 10: Optimism Explorer API key
+- Chain ID 56: BscScan API key
+- And so on for other chains
+
+You can also provide the verification keys as a JSON string in the CONTRACT_VERIFICATION_KEYS environment variable instead of using a file.
