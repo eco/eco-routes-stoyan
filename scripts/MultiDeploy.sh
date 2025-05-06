@@ -7,26 +7,28 @@ if [ -f .env ]; then
     set +a
 fi
 
+# Load the chain data utility function
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/load_chain_data.sh"
+
 # Ensure RESULTS_FILE is set
 if [ -z "$RESULTS_FILE" ]; then
     echo "❌ Error: RESULTS_FILE is not set in .env!"
     exit 1
 fi
 
-# Get the deployment data from the specified URL
-# CHAIN_DATA_URL="https://raw.githubusercontent.com/eco/eco-chains/refs/heads/ED-5079-auto-deploy/t.json"
+# Ensure CHAIN_DATA_URL is set
 if [ -z "$CHAIN_DATA_URL" ]; then
     echo "❌ Error: CHAIN_DATA_URL is not set in .env!"
     exit 1
 fi
-DEPLOY_JSON=$(curl -s "$CHAIN_DATA_URL")
 
-# Ensure deploy data is pulled
-if [ -z "$DEPLOY_JSON" ]; then
-    echo "❌ Error: Could not get deployment data from URL: $CHAIN_DATA_URL"
+# Load the chain data using the utility function
+DEPLOY_JSON=$(load_chain_data "$CHAIN_DATA_URL")
+if [ $? -ne 0 ]; then
+    # Error messages are already displayed by the function
     exit 1
 fi
-echo "Deployment JSON loaded successfully"
 
 # Only remove the results file if we're not in append mode
 if [ -z "$APPEND_RESULTS" ] || [ "$APPEND_RESULTS" != "true" ]; then

@@ -11,6 +11,10 @@ if [ -f .env ]; then
   set +a
 fi
 
+# Load the chain data utility function
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/load_chain_data.sh"
+
 # Address that will deploy the factory
 FACTORY_DEPLOYER="0xBb6e024b9cFFACB947A71991E386681B1Cd1477D"
 
@@ -21,19 +25,18 @@ SINGLETON_FACTORY_ADDRESS="0xce0042B868300000d44A59004Da54A005ffdcf9f"
 # Source: https://github.com/ethereum/ercs/blob/master/ERCS/erc-2470.md
 SIGNED_TRANSACTION="0xf9016c8085174876e8008303c4d88080b90154608060405234801561001057600080fd5b50610134806100206000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c80634af63f0214602d575b600080fd5b60cf60048036036040811015604157600080fd5b810190602081018135640100000000811115605b57600080fd5b820183602082011115606c57600080fd5b80359060200191846001830284011164010000000083111715608d57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250929550509135925060eb915050565b604080516001600160a01b039092168252519081900360200190f35b6000818351602085016000f5939250505056fea26469706673582212206b44f8a82cb6b156bfcc3dc6aadd6df4eefd204bc928a4397fd15dacf6d5320564736f6c634300060200331b83247000822470"
 
-# Get the deployment data from the specified URL
+# Ensure CHAIN_DATA_URL is set
 if [ -z "$CHAIN_DATA_URL" ]; then
   echo "❌ Error: CHAIN_DATA_URL is not set in .env\!"
   exit 1
 fi
-CHAIN_JSON=$(curl -s "$CHAIN_DATA_URL")
 
-# Ensure chain data is pulled
-if [ -z "$CHAIN_JSON" ]; then
-  echo "❌ Error: Could not get chain data from URL: $CHAIN_DATA_URL"
+# Load the chain data using the utility function
+CHAIN_JSON=$(load_chain_data "$CHAIN_DATA_URL")
+if [ $? -ne 0 ]; then
+  # Error messages are already displayed by the function
   exit 1
 fi
-echo "Chain JSON loaded successfully"
 
 echo "$CHAIN_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
   CHAIN_ID=$(echo "$entry" | jq -r '.key')

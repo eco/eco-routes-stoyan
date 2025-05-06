@@ -1,4 +1,4 @@
-#\!/usr/bin/env bash
+#!/usr/bin/env bash
 
 # Load environment variables from .env safely
 if [ -f .env ]; then
@@ -7,19 +7,22 @@ if [ -f .env ]; then
     set +a
 fi
 
-# Get the deployment data from the specified URL
+# Load the chain data utility function
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/load_chain_data.sh"
+
+# Ensure CHAIN_DATA_URL is set
 if [ -z "$CHAIN_DATA_URL" ]; then
     echo "❌ Error: CHAIN_DATA_URL is not set in .env\!"
     exit 1
 fi
-CHAIN_JSON=$(curl -s "$CHAIN_DATA_URL")
 
-# Ensure chain data is pulled
-if [ -z "$CHAIN_JSON" ]; then
-    echo "❌ Error: Could not get chain data from URL: $CHAIN_DATA_URL"
+# Load the chain data using the utility function
+CHAIN_JSON=$(load_chain_data "$CHAIN_DATA_URL")
+if [ $? -ne 0 ]; then
+    # Error messages are already displayed by the function
     exit 1
 fi
-echo "Chain JSON loaded successfully"
 
 # Verify bytecode file exists
 if [ \! -f "$BYTECODE_PATH" ]; then
