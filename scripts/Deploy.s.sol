@@ -61,7 +61,7 @@ contract Deploy is Script {
         ctx.hyperProverSalt = getContractSalt(ctx.salt, "HYPER_PROVER");
 
         vm.startBroadcast();
-
+        
         // Deploy deployer if it hasn't been deployed
         if (!isDeployed(address(create3Deployer))) {
             deployCreate3Deployer();
@@ -84,19 +84,8 @@ contract Deploy is Script {
 
         // Deploy Inbox - using a code block to manage variable lifetimes
         {
-            // Initialize solvers array properly with a defined length
-            address[] memory solvers = new address[](0);
-            uint96 minBatcherReward = 0;
-            ctx.inboxConstructorArgs = abi.encode(
-                ctx.deployer,
-                true,
-                minBatcherReward,
-                solvers
-            );
-
             bytes memory inboxBytecode = abi.encodePacked(
-                type(Inbox).creationCode,
-                ctx.inboxConstructorArgs
+                type(Inbox).creationCode
             );
 
             bool wasInboxDeployed;
