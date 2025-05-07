@@ -106,20 +106,20 @@ export async function prepare(
   const packageName = packageJson.name
 
   // 1. Build the hardhat and forge files
-  // await buildProject() 
+  await buildProject() 
 
   // 2. Deploy EIP-2470 factory if it doesn't exist
   logger.log(`Deploying EIP-2470 factory if it doesn't exist:`)
-  // await deploySingletonFactory(context)
+  await deploySingletonFactory(context)
 
   // 3. Deploy contracts & Verify contracts
   logger.log(`Deploying contracts for package: ${packageName}`)
-  // await deployRoutesContracts(context, packageName)
+  await deployRoutesContracts(context, packageName)
   logger.log(`Contracts deployed for version ${nextRelease.version}`)
 
   // 4. Verify contracts
   logger.log(`Verifying deployed contracts`)
-  // await verifyContracts(context)
+  await verifyContracts(context)
   logger.log(`Contracts verified for version ${nextRelease.version}`)
 
   // 5. Build the distribution package

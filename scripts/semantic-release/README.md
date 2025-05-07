@@ -1,6 +1,6 @@
-# Semantic Release Process
+# Eco Routes Semantic Release System
 
-This directory contains the Eco Routes semantic-release system that automates versioning, contract deployment, and package publishing. The system uses a deterministic deployment approach with CREATE3 to ensure contract addresses are consistent across deployments and networks.
+This directory contains the Eco Routes semantic-release system that automates versioning, contract deployment, and package publishing. The system uses a deterministic deployment approach with CREATE2/CREATE3 to ensure contract addresses are consistent across deployments and networks.
 
 ## Overview
 
@@ -11,15 +11,24 @@ The semantic-release workflow handles:
 3. **Contract verification**: Verifies deployed contracts on block explorers
 4. **Package publishing**: Builds and publishes npm packages with TypeScript support
 
+## Key Features
+
+- **Deterministic Deployment**: Contracts are deployed to the same addresses on all chains
+- **Environment Support**: Handles both production and pre-production environments
+- **TypeScript Integration**: Generates type-safe contract interfaces from ABIs
+- **Contract Verification**: Automatically verifies contracts on block explorers
+- **Versioning**: Integrates with semantic versioning practices
+- **CI/CD Pipeline**: Fully automated through GitHub Actions
+
 ## Lifecycle Hooks
 
 The semantic-release process consists of the following steps:
 
-1. **verifyConditions**: Validates environment variables, package.json, and version compatibility
+1. **verifyConditions** (`sr-verify-conditions.ts`): Validates environment variables, package.json, and version compatibility
 2. **analyzeCommits**: Determines the next version based on commit messages (built into semantic-release)
-3. **version**: Updates version information in Solidity files and package.json
-4. **prepare**: Builds the project, deploys contracts, and prepares the package for publishing
-5. **publish**: Publishes the built package to npm
+3. **version** (`sr-version.ts`): Updates version information in Solidity files and package.json
+4. **prepare** (`sr-prepare.ts`): Builds the project, deploys contracts, and prepares the package for publishing
+5. **publish** (`sr-publish.ts`): Publishes the built package to npm
 
 ## GitHub Actions Integration
 
@@ -69,27 +78,45 @@ To actually publish during local testing (USE WITH CAUTION):
 NOT_DRY_RUN=true yarn semantic:pub
 ```
 
-## Directory Structure
+## Code Organization
+
+### Core Semantic Release Modules
+
+These modules implement the semantic-release lifecycle hooks:
+
+- `sr-verify-conditions.ts`: Validates environment variables, package compatibility, and system setup
+- `sr-version.ts`: Updates version information in contract source files and package.json
+- `sr-prepare.ts`: Coordinates the build, compilation, and deployment processes
+- `sr-publish.ts`: Handles package publishing to npm with version tagging
+- `index.ts`: Main entry point that exposes the semantic-release plugin functions
+
+### Deployment and Building Modules
+
+These modules handle contract deployment and package building:
+
+- `sr-deploy-contracts.ts`: Manages deterministic deployment across multiple chains and environments
+- `sr-build-package.ts`: Creates npm package with TypeScript typings, ABIs, and deployment addresses
+- `sr-singleton-factory.ts`: Deploys the CREATE2 factory for deterministic addressing
+- `verify-contracts.ts`: Verifies deployed contracts on block explorers
+- `gen-bytecode.ts`: Generates deployment bytecode with encoded constructor arguments
+
+### Utility Modules
+
+These provide shared functionality across the release process:
+
+- `constants.ts`: Central configuration and path definitions
+- `helpers.ts`: Common utility functions for versioning and file operations
+- `solidity-version-updater.ts`: Updates version strings in contract source files
+- `eco-routes-local.ts`: Local testing script for the full process
+
+### Assets and Tests
 
 - `assets/`: Utility files that get bundled with the package
+  - `utils/`: TypeScript utilities for client interaction with contracts
+    - `intent.ts`: Type-safe intent encoding, decoding, and hashing functions
+    - `utils.ts`: Contract interaction helpers
+    - `helper.ts`: General purpose utilities for the client library
 - `tests/`: Unit tests for the semantic-release functions
-- `constants.ts`: Shared constants and path utilities
-- `deploy-contracts.ts`: Handles deployment of contracts to networks
-- `eco-routes-local.ts`: Local testing script for the full process
-- `helpers.ts`: Shared utility functions
-- `index.ts`: Main entry point for semantic-release
-- `solidity-version-updater.ts`: Updates version strings in Solidity files
-- `sr-build-package.ts`: Builds the package for distribution
-- `sr-prepare.ts`: Prepare step in the semantic-release lifecycle
-- `sr-publish.ts`: Publishes the package to npm
-- `sr-verify-conditions.ts`: Validates conditions for a release
-- `sr-version.ts`: Updates version information
-- `verify-contracts.ts`: Handles verification of contracts on block explorers. This module:
-  - Reads deployment results from the deployment step
-  - Obtains verification API keys from environment variables or local file
-  - Runs the verification script with appropriate parameters
-  - Handles potential verification failures gracefully (non-blocking for releases)
-  - Warns about large numbers of contracts that might cause timeouts
 
 ## Deterministic Deployments
 
@@ -231,8 +258,48 @@ yarn deploy:plugin
 yarn run tsx scripts/semantic-release/verify-contracts.ts
 ```
 
+## TypeScript Package and Client Library
+
+The semantic-release process builds and publishes two npm packages:
+
+1. **@eco-foundation/eco-routes**: The main package containing both Solidity contracts and TypeScript types
+2. **@eco-foundation/eco-routes-ts**: TypeScript-only package for frontend applications
+
+### Package Features
+
+The npm packages provide the following features to developers:
+
+- **Type-Safe Contract Interaction**: Generated TypeScript types from ABIs
+- **Intent Encoding and Hashing**: Functions for creating and validating intents
+- **Deployed Contract Addresses**: Address constants for all supported chains
+- **Chain ID Utilities**: Helper functions for working with supported chains
+- **Versioned Deployments**: Package versions match deployed contract versions
+
+### Usage Example
+
+```typescript
+import { EcoProtocolAddresses, IntentSourceAbi, encodeIntent, hashIntent } from '@eco-foundation/eco-routes';
+
+// Get IntentSource address for Optimism (chain ID 10)
+const intentSourceAddress = EcoProtocolAddresses['10'].IntentSource;
+
+// Create and hash an intent
+const intent = {
+  route: {
+    // Route parameters
+  },
+  reward: {
+    // Reward parameters
+  }
+};
+
+const { intentHash } = hashIntent(intent);
+const encodedIntent = encodeIntent(intent);
+```
+
 ## References
 
 - [Semantic Release Documentation](https://semantic-release.gitbook.io/semantic-release/)
 - [Conventional Commits Specification](https://www.conventionalcommits.org/)
 - [CREATE3 Deployment Explanation](https://github.com/0xsequence/create3)
+- [Viem TypeScript Library](https://viem.sh/)

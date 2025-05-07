@@ -391,9 +391,21 @@ export const EcoProtocolAddresses = ${JSON.stringify(addresses, null, 2)} as con
 export type EcoChainConfig = {
   ${CONTRACT_TYPES.map((type) => `${type}: Hex`).join(',\n  ')}
 }
+
+/**
+ * The chain ids of the eco protocol, including the different environments. 
+ */
 export type EcoChainIdsEnv = keyof typeof EcoProtocolAddresses
+
+/**
+ * The chain ids of the eco protocol, exluding the different environments. 
+ */
 export type EcoChainIds = Exclude<EcoChainIdsEnv, ${"`${string}-${string}`"}>;
 export type ContractName<T extends EcoChainIdsEnv> = keyof typeof EcoProtocolAddresses[T];
+
+/**
+ * An array of all the chain ids of the eco protocol, excluding the different environments.
+ */
 export const EcoChainIdsArray: EcoChainIds[] = Object.keys(EcoProtocolAddresses).filter(
   (chainId): chainId is EcoChainIds => !chainId.includes('-')
 );

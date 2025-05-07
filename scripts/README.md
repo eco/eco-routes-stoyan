@@ -1,6 +1,26 @@
-# Eco-Routes Deployment Scripts
+# Eco-Routes Scripts
 
-This README provides instructions for setting up and using the deployment scripts in the eco-routes project.
+This directory contains scripts for deploying, verifying, and publishing the Eco-Routes protocol. The scripts are divided into two main categories:
+
+1. **Deployment Scripts**: Shell scripts and Solidity scripts for deploying and verifying contracts
+2. **Semantic Release Scripts**: TypeScript modules for versioning, building, and publishing npm packages
+
+## Directory Structure
+
+- `scripts/` - Root scripts directory
+  - `createXOld/` - Legacy deployment scripts using CreateX (archived)
+  - `semantic-release/` - Semantic release automation scripts
+  - `utils/` - Shared utility scripts
+  - `*.sh` - Direct deployment and verification shell scripts
+  - `Deploy.s.sol` - Main Foundry deployment script
+
+## Semantic Release Integration
+
+The `semantic-release/` directory contains a complete system for automated versioning, deployment, and publishing. See [semantic-release/README.md](./semantic-release/README.md) for details.
+
+## Deployment Scripts
+
+The deployment scripts handle the deterministic deployment of contracts across multiple chains. These scripts can be used directly or through the semantic-release process.
 
 ## Setup Requirements
 

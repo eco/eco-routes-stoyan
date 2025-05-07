@@ -72,10 +72,9 @@ export function updateSolidityVersions(
   logger: Logger,
 ): number {
   const contractsDir = path.join(cwd, 'contracts')
-  const gitHash = getGitHashShort()
   let updatedCount = 0
 
-  logger.log(`Updating Solidity files to version ${version}-${gitHash}`)
+  logger.log(`Updating Solidity files to version ${version}`)
 
   // Recursive function to traverse directories and update .sol files
   function updateDirectory(dir: string): void {
@@ -119,7 +118,7 @@ export function updateSolidityVersions(
   try {
     updateDirectory(contractsDir)
     logger.log(
-      `Successfully updated ${updatedCount} Solidity files with version ${version}-${gitHash}`,
+      `Successfully updated ${updatedCount} Solidity files with version ${version}`,
     )
     return updatedCount
   } catch (error) {
