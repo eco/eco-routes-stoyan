@@ -51,7 +51,7 @@
     "deployCI": "npx tsx scripts/deploy/deployCI.ts",
     "deployForgeCI": "npx tsx scripts/deploy/deployForgeCI.ts",
     "semantic:pub": "npx tsx scripts/semantic-release/eco-routes-local.ts",
-    "pub:clean": "rimraf build/dist",
+    "pub:clean": "rimraf build && rimraf out",
     "pub:build": "cd build && tsc",
     "pub:prepack": "yarn pub:clean && yarn pub:build",
     "pub:tag": "npx tsx scripts/publish/tag.ts",

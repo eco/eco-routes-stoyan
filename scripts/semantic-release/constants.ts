@@ -10,15 +10,15 @@ export const PATHS = {
 
   // Deployment related paths
   OUTPUT_DIR: 'out',
-  DEPLOYMENT_RESULTS_FILE: 'deployed_contracts.csv',
+  DEPLOYMENT_RESULTS_FILE: 'deployed.csv',
+  DEPLOYMENT_ALL_FILE: 'deployedAll.csv',
   DEPLOYMENT_BYTECODE_FILE: 'deployBytecode.json',
   DEPLOYED_ADDRESSES_JSON: 'build/deployAddresses.json',
-  DEPLOY_SCRIPT: 'scripts/MultiDeploy.sh',
-  DEPLOY_SH_SCRIPT: 'scripts/deploy.sh',
-  DEPLOY_BYTECODE_SCRIPT: 'scripts/deployCore.sh',
+  SINGLETON_FACTORY_DEPLOY_SCRIPT: 'scripts/deploySingletonFactory.sh',
+  DEPLOY_SCRIPT: 'scripts/deployRoutes.sh',
 
   // Verification related paths
-  VERIFICATION_SCRIPT: 'scripts/Verify.sh',
+  VERIFICATION_SCRIPT: 'scripts/verifyRoutes.sh',
   VERIFICATION_KEYS_FILE: 'verification-keys.json',
 
   //Chains
@@ -48,10 +48,18 @@ export const ENV_VARS = {
   CI: 'CI',
 
   // Verification related
-  CONTRACT_VERIFICATION_KEYS: 'CONTRACT_VERIFICATION_KEYS',
-  CONTRACT_VERIFICATION_KEYS_FILE: 'CONTRACT_VERIFICATION_KEYS_FILE',
   VERIFICATION_KEYS: 'VERIFICATION_KEYS',
+  VERIFICATION_KEYS_FILE: 'VERIFICATION_KEYS_FILE',
 }
+
+/**
+ * Environment variables that are required for deployment and verification
+ */
+export const ENV_VARS_REQUIRED = [
+  ENV_VARS.PRIVATE_KEY,
+  ENV_VARS.ALCHEMY_API_KEY,
+  ENV_VARS.RESULTS_FILE,
+]
 
 /**
  * Package related constants including npm package names

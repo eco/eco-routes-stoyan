@@ -29,7 +29,7 @@ import { determineSalts } from '../utils/extract-salt'
 
 // Define the contract types that form our chain configuration
 // This is used for both CSV headers and TypeScript type definitions
-export const CONTRACT_TYPES = ['IntentSource', 'Inbox', 'HyperProver'] as const
+export const CONTRACT_TYPES = ['IntentSource', 'Inbox', 'HyperProver', 'MetaProver'] as const
 
 const execPromise = promisify(exec)
 
@@ -277,7 +277,7 @@ function generateCsvFile(
   const rows = []
 
   // Add header row with specified format using the shared CONTRACT_TYPES
-  const headers = ['Chain', ...CONTRACT_TYPES]
+  const headers = ['ChainID', ...CONTRACT_TYPES]
   rows.push(headers)
 
   // Add data rows

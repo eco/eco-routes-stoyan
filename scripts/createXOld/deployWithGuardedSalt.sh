@@ -12,12 +12,10 @@
 # - CREATEX_ADDRESS: The address of the deployed CreateX contract.
 # Usage: ./deployWithGuardedSalt.sh
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-    set -a  # Export all variables automatically
-    source .env
-    set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../utils/load_env.sh"
+load_env
 set -e
 
 # Check required environment variables

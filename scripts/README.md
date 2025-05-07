@@ -30,7 +30,7 @@ BYTECODE_PATH=<Path to bytecode JSON file>
 
 # For VerifyResults.sh
 VERIFICATION_KEYS_FILE=<Path to verification keys JSON file>
-CONTRACT_VERIFICATION_KEYS=<Optional: JSON string of verification keys>
+VERIFICATION_KEYS=<Optional: JSON string of verification keys>
 ```
 
 ### Account Funding
@@ -163,4 +163,4 @@ Each chain requires its own specific API key for the relevant block explorer:
 - Chain ID 56: BscScan API key
 - And so on for other chains
 
-You can also provide the verification keys as a JSON string in the CONTRACT_VERIFICATION_KEYS environment variable instead of using a file.
+You can also provide the verification keys as a JSON string in the VERIFICATION_KEYS environment variable instead of using a file.

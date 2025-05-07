@@ -1,6 +1,6 @@
 import { prepare, SemanticContext, SemanticPluginConfig } from '../sr-prepare'
 import * as buildPackageModule from '../sr-build-package'
-import * as deployModule from '../deploy-contracts'
+import * as deployModule from '../sr-deploy-contracts'
 import * as verifyModule from '../verify-contracts'
 import { exec } from 'child_process'
 

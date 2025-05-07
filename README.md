@@ -179,7 +179,7 @@ The deployment system consists of several interconnected components:
    ALCHEMY_API_KEY=...              # API key for Alchemy RPC endpoints
    
    # For contract verification
-   CONTRACT_VERIFICATION_KEYS={"10":"your_api_key","8453":"your_api_key",...}
+   VERIFICATION_KEYS={"10":"your_api_key","8453":"your_api_key",...}
    
    # For publishing (CI environment)
    NPM_TOKEN=...                    # NPM token with publish rights

@@ -44,13 +44,13 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       # Fetch secrets from AWS Secrets Manager as a JSON string
-      # The secret will be available as an environment variable: CONTRACT_VERIFICATION_KEYS
+      # The secret will be available as an environment variable: VERIFICATION_KEYS
       - name: Get secrets from AWS Secrets Manager
         id: fetch-secrets
         uses: aws-actions/aws-secretsmanager-get-secrets@v1
         with:
           secret-ids: |
-            CONTRACT_VERIFICATION_KEYS, ${{ secrets.AWS_SECRET_NAME }}
+            VERIFICATION_KEYS, ${{ secrets.AWS_SECRET_NAME }}
           parse-json-secrets: false # Keep as raw JSON string
 
       # Verify that secrets were loaded successfully
@@ -58,8 +58,8 @@ jobs:
         id: check-secrets
         run: |
           # Check if the secret was loaded properly
-          if [ -z "$CONTRACT_VERIFICATION_KEYS" ]; then
-            echo "Error: CONTRACT_VERIFICATION_KEYS environment variable is empty"
+          if [ -z "$VERIFICATION_KEYS" ]; then
+            echo "Error: VERIFICATION_KEYS environment variable is empty"
             exit 1
           fi
           echo "AWS Secrets loaded successfully"
@@ -120,11 +120,11 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           CHAIN_DATA_URL: ${{ secrets.CHAIN_DATA_URL }}
           BYTECODE_PATH: ${{ secrets.BYTECODE_PATH }}
-          # CONTRACT_VERIFICATION_KEYS is already set by aws-secretsmanager-get-secrets
+          # VERIFICATION_KEYS is already set by aws-secretsmanager-get-secrets
         with: 
           cmd: semantic:pub
           # echo "Printing contract verification keys"
-          # echo "$CONTRACT_VERIFICATION_KEYS"
+          # echo "$VERIFICATION_KEYS"
           # echo "Processing tag from eco-chains: $ECO_CHAINS_TAG or custom version: $CUSTOM_VERSION"
           # Run semantic-release to create a new release based on commits
           # npx semantic-release

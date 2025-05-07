@@ -3,12 +3,10 @@
 # Script to verify contracts deployed using MultiDeploy.sh
 # This script reads deployment data from RESULTS_FILE and verification keys from VERIFICATION_KEYS_FILE
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-  set -a # Export all variables automatically
-  source .env
-  set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/load_env.sh"
+load_env
 
 # Load the chain data utility function
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,14 +39,14 @@ fi
 # Load verification keys from environment variable or file
 echo "📝 Loading verification keys from $VERIFICATION_KEYS_FILE"
 VERIFICATION_KEYS=""
-if [ \! -z "$CONTRACT_VERIFICATION_KEYS" ]; then
-  echo "📝 Using verification keys from CONTRACT_VERIFICATION_KEYS environment variable"
-  VERIFICATION_KEYS="$CONTRACT_VERIFICATION_KEYS"
+if [ \! -z "$VERIFICATION_KEYS" ]; then
+  echo "📝 Using verification keys from VERIFICATION_KEYS environment variable"
+  VERIFICATION_KEYS="$VERIFICATION_KEYS"
 elif [ -f "$VERIFICATION_KEYS_FILE" ]; then
   echo "📝 Using verification keys from $VERIFICATION_KEYS_FILE"
   VERIFICATION_KEYS=$(cat "$VERIFICATION_KEYS_FILE")
 else
-  echo "❌ Error: Neither CONTRACT_VERIFICATION_KEYS environment variable nor $VERIFICATION_KEYS_FILE found."
+  echo "❌ Error: Neither VERIFICATION_KEYS environment variable nor $VERIFICATION_KEYS_FILE found."
   exit 1
 fi
 
@@ -70,6 +68,17 @@ fi
 # Process the deployment data for verification
 echo "📝 Starting contract verification process..."
 echo "Reading deployment data from: $RESULTS_FILE"
+
+# Check if first line contains CSV headers and remove if needed
+FIRST_LINE=$(head -n 1 "$RESULTS_FILE")
+if [[ "$FIRST_LINE" == *"ChainID"*"ContractAddress"*"ContractPath"* ]]; then
+  echo "📝 CSV header detected in results file, removing it before verification"
+  # Create a temporary file without the header
+  TEMP_FILE=$(mktemp)
+  tail -n +2 "$RESULTS_FILE" > "$TEMP_FILE"
+  # Replace original file
+  mv "$TEMP_FILE" "$RESULTS_FILE"
+fi
 
 # Count total contracts to verify
 TOTAL_CONTRACTS=$(wc -l < "$RESULTS_FILE" | tr -d ' ')

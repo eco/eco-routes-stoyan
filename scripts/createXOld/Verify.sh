@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-    set -a  # Export all variables automatically
-    source .env
-    set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../utils/load_env.sh"
+load_env
 
 # Define file paths
 VERIFICATION_DATA_FILE=${RESULTS_FILE:-"out/verify-data.txt"}

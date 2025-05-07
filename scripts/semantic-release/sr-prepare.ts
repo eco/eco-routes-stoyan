@@ -18,12 +18,13 @@
 import path from 'path'
 import fs from 'fs'
 import { buildPackage } from './sr-build-package'
-import { deployRoutesContracts } from './deploy-contracts'
+import { deployRoutesContracts } from './sr-deploy-contracts'
 import dotenv from 'dotenv'
 import { Logger } from './helpers'
 import { promisify } from 'util'
 import { exec } from 'child_process'
 import { verifyContracts } from './verify-contracts'
+import { deploySingletonFactory } from './sr-singleton-factory'
 
 dotenv.config()
 
@@ -88,17 +89,21 @@ export async function prepare(
   // 1. Build the hardhat and forge files
   await buildProject() 
 
-  // 2. Deploy contracts
+  // 2. Deploy EIP-2470 factory if it doesn't exist
+  logger.log(`Deploying EIP-2470 factory if it doesn't exist:`)
+  await deploySingletonFactory(context)
+
+  // 3. Deploy contracts & Verify contracts
   logger.log(`Deploying contracts for package: ${packageName}`)
   await deployRoutesContracts(context, packageName)
   logger.log(`Contracts deployed for version ${nextRelease.version}`)
 
-  // 3. Verify contracts
+  // 4. Verify contracts
   logger.log(`Verifying deployed contracts`)
   await verifyContracts(context)
   logger.log(`Contracts verified for version ${nextRelease.version}`)
 
-  // 4. Build the distribution package
+  // 5. Build the distribution package
   logger.log(`Building main package`)
   await buildPackage(context)
   logger.log(`Main package built for version ${nextRelease.version}`)

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { SemanticContext } from '../sr-prepare';
 import { determineSalts } from '../../utils/extract-salt';
-import { deployRoutesContracts } from '../deploy-contracts';
+import { deployRoutesContracts } from '../sr-deploy-contracts';
 
 // Mock dependencies
 jest.mock('fs', () => ({

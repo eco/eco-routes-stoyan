@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-    set -a  # Export all variables automatically
-    source .env
-    set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/utils/load_env.sh"
+load_env
 
 # Load the chain data utility function
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,6 +36,8 @@ if [ -z "$APPEND_RESULTS" ] || [ "$APPEND_RESULTS" != "true" ]; then
         rm "$RESULTS_FILE"
         touch "$RESULTS_FILE"
     fi
+    # Create header for CSV file
+    echo "ChainID,ContractAddress,ContractPath,ContractArguments" > $RESULTS_FILE
 else
     echo "📝 Appending to existing results file: $RESULTS_FILE"
     # Create the file if it doesn't exist yet
@@ -48,6 +48,7 @@ fi
 
 PUBLIC_ADDRESS=$(cast wallet address --private-key "$PRIVATE_KEY")
 echo "Wallet Public Address: $PUBLIC_ADDRESS"
+echo "Using SALT: $SALT"
 # Process each chain from the JSON data
 echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
     CHAIN_ID=$(echo "$entry" | jq -r '.key')
@@ -57,14 +58,14 @@ echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
     MAILBOX_CONTRACT=$(echo "$value" | jq -r '.mailbox')
     GAS_MULTIPLIER=$(echo "$value" | jq -r '.gasMultiplier // ""')
 
-    if [[ "$RPC_URL" == "null" || -z "$RPC_URL" || "$MAILBOX_CONTRACT" == "null" || -z "$MAILBOX_CONTRACT" ]]; then
+    if [[ "$RPC_URL" == "null" || -z "$RPC_URL" ]]; then
         echo "⚠️  Warning: Missing required data for Chain ID $CHAIN_ID. Skipping..."
         continue
     fi
 
     # Replace environment variable placeholders if necessary
     RPC_URL=$(eval echo "$RPC_URL")
-    
+
     # Check for API keys in URL
     if [[ "$RPC_URL" == *"${ALCHEMY_API_KEY}"* && -z "$ALCHEMY_API_KEY" ]]; then
         echo "❌ Error: ALCHEMY_API_KEY is required but not set."

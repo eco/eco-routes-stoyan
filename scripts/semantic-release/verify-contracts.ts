@@ -46,22 +46,22 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
 
     // Try environment variable first, this should be local in development
     // In the CI/CD pipeline, it will be loaded from the AWS secret manager
-    if (process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS]) {
+    if (process.env[ENV_VARS.VERIFICATION_KEYS]) {
       try {
         verificationKeys = JSON.parse(
-          process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS] as string,
+          process.env[ENV_VARS.VERIFICATION_KEYS] as string,
         )
         logger.log(
-          `Found verification keys in ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} environment variable`,
+          `Found verification keys in ${ENV_VARS.VERIFICATION_KEYS} environment variable`,
         )
       } catch (e) {
         logger.warn(
-          `Failed to parse ${ENV_VARS.CONTRACT_VERIFICATION_KEYS} as JSON: ${(e as Error).message}`,
+          `Failed to parse ${ENV_VARS.VERIFICATION_KEYS} as JSON: ${(e as Error).message}`,
         )
       }
     }
     const backupFile =
-      process.env[ENV_VARS.CONTRACT_VERIFICATION_KEYS_FILE] ||
+      process.env[ENV_VARS.VERIFICATION_KEYS_FILE] ||
       PATHS.VERIFICATION_KEYS_FILE
     // If environment variable didn't work, try file fallback
     if (Object.keys(verificationKeys).length === 0) {
@@ -92,26 +92,26 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     )
 
     // Set up environment for verification
-    const resultsFile = path.join(cwd, PATHS.OUTPUT_DIR, 'verify-data.txt')
+    const deployAllFile = path.join(cwd, PATHS.OUTPUT_DIR, PATHS.DEPLOYMENT_ALL_FILE)
 
     // Check if verification data exists
-    if (!fs.existsSync(resultsFile)) {
+    if (!fs.existsSync(deployAllFile)) {
       logger.error(
-        `Verification data file not found at ${resultsFile}, skipping verification`,
+        `Verification data file not found at ${deployAllFile}, skipping verification`,
       )
       return
     }
 
     // Check if the file has content
-    const fileContent = fs.readFileSync(resultsFile, 'utf-8')
+    const fileContent = fs.readFileSync(deployAllFile, 'utf-8')
     if (!fileContent.trim()) {
       logger.error(
-        `Verification data file is empty at ${resultsFile}, skipping verification`,
+        `Verification data file is empty at ${deployAllFile}, skipping verification`,
       )
       return
     }
 
-    const entryCount = fileContent.split('\n').filter(Boolean).length
+    const entryCount = fileContent.split('\n').filter(Boolean).length - 1 // Exclude header line
     logger.log(
       `Found verification data file with ${entryCount} entries to verify`,
     )
@@ -129,7 +129,7 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
 
     // Execute verification
     await executeVerification(logger, cwd, {
-      resultsFile,
+      resultsFile: deployAllFile,
       verificationKeys,
     })
 

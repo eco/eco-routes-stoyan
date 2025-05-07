@@ -1,11 +1,9 @@
 #\!/usr/bin/env bash
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-  set -a # Export all variables automatically
-  source .env
-  set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../utils/load_env.sh"
+load_env
 
 # Define paths
 DEPLOYMENT_DATA_DIR="out"
@@ -35,14 +33,14 @@ echo "Chain JSON loaded successfully"
 
 # Load verification keys from environment variable or file
 VERIFICATION_KEYS=""
-if [ \! -z "$CONTRACT_VERIFICATION_KEYS" ]; then
-  echo "📝 Using verification keys from CONTRACT_VERIFICATION_KEYS environment variable"
-  VERIFICATION_KEYS="$CONTRACT_VERIFICATION_KEYS"
+if [ \! -z "$VERIFICATION_KEYS" ]; then
+  echo "📝 Using verification keys from VERIFICATION_KEYS environment variable"
+  VERIFICATION_KEYS="$VERIFICATION_KEYS"
 elif [ -f "$VERIFICATION_KEYS_FILE" ]; then
   echo "📝 Using verification keys from $VERIFICATION_KEYS_FILE"
   VERIFICATION_KEYS=$(cat "$VERIFICATION_KEYS_FILE")
 else
-  echo "❌ Error: Neither CONTRACT_VERIFICATION_KEYS environment variable nor $VERIFICATION_KEYS_FILE found."
+  echo "❌ Error: Neither VERIFICATION_KEYS environment variable nor $VERIFICATION_KEYS_FILE found."
   exit 1
 fi
 

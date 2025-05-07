@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
 
-# Load environment variables from .env safely
-if [ -f .env ]; then
-    set -a  # Export all variables automatically
-    source .env
-    set +a
-fi
+# Load environment variables from .env, prioritizing existing env vars
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../utils/load_env.sh"
+load_env
 
 # Load the chain data utility function
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/utils/load_chain_data.sh"
+source "$SCRIPT_DIR/../../utils/load_chain_data.sh"
 
 # Ensure CHAIN_DATA_URL is set
 if [ -z "$CHAIN_DATA_URL" ]; then
