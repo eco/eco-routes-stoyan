@@ -104,3 +104,15 @@ output/proofGenerationOutput.json
 .idea/
 
 broadcast/
+
+# Ignore verification keys file with real keys
+verification-keys-*.json
+
+# Don't ignore the example keys file
+!verification-keys-example.json
+
+# Semantic release artifacts
+.release
+bytecode.json
+
+**/.claude/settings.local.json

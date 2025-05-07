@@ -19,9 +19,7 @@ contract TestProver is BaseProver {
 
     constructor(address _inbox) BaseProver(_inbox) {}
 
-    function version() external pure returns (string memory) {
-        return "1.8.14-e2c12e7";
-    }
+    function version() external pure returns (string memory) { return "2.0.1-beta.0-32c46008"; }
 
     function addProvenIntent(bytes32 _hash, address _claimant) public {
         provenIntents[_hash] = _claimant;
