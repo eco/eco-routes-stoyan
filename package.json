@@ -21,7 +21,7 @@
     "url": "git+https://github.com/eco/eco-routes-stoyan.git"
   },
   "author": "Eco Engineering <eng@eco.com>",
-  "license": "Business Source License 1.1",
+  "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "solidity",
     "ethereum",
@@ -65,8 +65,6 @@
     "@actions/core": "^1.11.1",
     "@alchemy/aa-core": "^3.19.0",
     "@eth-optimism/contracts-bedrock": "^0.17.2",
-    "@hyperlane-xyz/registry": "^4.2.0",
-    "@hyperlane-xyz/sdk": "^5.1.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
@@ -76,8 +74,6 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-etherscan": "^3.1.8",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
-    "@openzeppelin/contracts": "^5.0.2",
-    "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@openzeppelin/hardhat-upgrades": "^3.2.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^6.0.3",
