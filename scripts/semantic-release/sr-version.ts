@@ -1,19 +1,26 @@
 /**
  * @file sr-version.ts
  *
- * Implements the version step in the semantic-release lifecycle.
- * This step is responsible for updating version information in
- * various files like Solidity contracts and package.json before
- * the prepare step runs.
+ * Manages version information updates across both Solidity contracts and npm packages.
+ * This critical step in the semantic-release process ensures version consistency
+ * between on-chain and off-chain components of the protocol.
+ * 
+ * The version module handles the complex task of synchronizing version information
+ * across different file types and ensuring that deployed smart contracts properly
+ * report their version information through standardized interfaces. This includes
+ * embedding Git commit information for traceability between deployed code and source.
  *
- * Version updates include:
- * 1. Updating the semver version in package.json
- * 2. Finding and updating all Solidity contract files that implement version() functions
- * 3. Including the git hash in the version string for Solidity contracts
- *
- * The version step is critical for ensuring that deployed contracts report
- * the correct version information and maintaining consistency between
- * on-chain and off-chain components.
+ * Key responsibilities:
+ * 1. Updating the semantic version in package.json for npm publishing
+ * 2. Finding and updating all Solidity contracts implementing Semver interfaces
+ * 3. Converting semantic versions to appropriate on-chain representations
+ * 4. Embedding Git commit hash information in deployed contract versions
+ * 5. Ensuring version consistency across all protocol components
+ * 6. Generating version changelogs and documentation
+ * 
+ * This synchronization is essential for protocol security and auditability,
+ * allowing both off-chain and on-chain verification of deployed contract versions
+ * and maintaining a clear lineage between source code and deployed bytecode.
  */
 
 import { SemanticContext, SemanticPluginConfig } from './sr-prepare'
@@ -25,13 +32,24 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 /**
- * Updates version information in all relevant files
+ * Updates version information in all relevant files across the codebase.
+ * 
+ * This function implements the "version" step in the semantic-release lifecycle,
+ * which runs after analyzeCommits (to determine the next version) and before
+ * prepare (which builds and deploys the contracts). It ensures consistent versioning
+ * between package.json and Solidity contract implementations.
  *
- * This is the "version" step in the semantic-release lifecycle
- * It runs after analyzeCommits and before prepare
+ * The function handles:
+ * 1. Determining the appropriate version from semantic-release or environment variables
+ * 2. Updating the version in package.json for npm publishing
+ * 3. Updating Semver.sol implementations in Solidity contracts to report the correct version
+ * 4. Logging all version updates for traceability
  *
- * @param pluginConfig - Plugin configuration options
- * @param context - Semantic release context
+ * @param pluginConfig - Plugin configuration options from semantic-release
+ * @param context - Semantic release context with version, logger, and environment information
+ * @returns Promise that resolves when all version updates are complete
+ * 
+ * @throws Will throw an error if any file updates fail
  */
 export async function version(
   pluginConfig: SemanticPluginConfig,

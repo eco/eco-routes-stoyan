@@ -1,4 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# deployRoutes.sh
+#
+# This script handles the deployment of Eco Routes contracts to multiple chains.
+# It uses Foundry's forge script to deploy contracts with a specified SALT value
+# for deterministic deployment, ensuring the same addresses across chains.
+#
+# Features:
+# - Deploys to multiple chains defined in chain data JSON
+# - Uses deterministic deployment with CREATE2/CREATE3 via provided SALT
+# - Outputs deployment results as a CSV file for verification and tracking
+# - Supports environment variable placeholders in RPC URLs
+# - Records contract addresses, paths, and constructor arguments
+#
+# Environment variables:
+# - SALT: Deterministic deployment salt (hex value)
+# - PRIVATE_KEY: Private key for deployment
+# - ALCHEMY_API_KEY: API key for Alchemy RPC endpoints
+# - RESULTS_FILE: Path to write deployment results
+# - CHAIN_DATA_URL: URL to chain configuration JSON
+# - APPEND_RESULTS: If "true", append to existing results file
 
 # Load environment variables from .env, prioritizing existing env vars
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

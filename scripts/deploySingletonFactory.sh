@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
-
-# Script to check and deploy the SingletonFactory (ERC-2470)
-# This script checks if a contract exists at the standard ERC-2470 address
-# and deploys it if not present
+#
+# deploySingletonFactory.sh
+#
+# This script handles the deployment of the canonical ERC-2470 SingletonFactory contract.
+# The SingletonFactory enables deterministic contract deployment across EVM chains
+# at predetermined addresses, which is crucial for cross-chain consistency.
+#
+# Features:
+# - Checks if the ERC-2470 factory already exists at the canonical address
+# - Deploys the factory using a specific private key if not present
+# - Works with multiple chains by using chain configuration data
+# - Includes gas price management for proper transaction execution
+# - Supports configuring gas multipliers for congested networks
+#
+# Environment variables:
+# - PRIVATE_KEY: Private key for deployment
+# - CHAIN_DATA_URL: URL to chain configuration JSON with RPC endpoints
 
 # Load environment variables from .env, prioritizing existing env vars
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

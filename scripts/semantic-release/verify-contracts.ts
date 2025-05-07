@@ -1,16 +1,23 @@
 /**
  * @file verify-contracts.ts
  *
- * Handles verification of deployed smart contracts on blockchain explorers (like Etherscan).
- * This process runs after deployment but before publishing to ensure that contract code
- * is publicly verified on-chain.
+ * Manages the verification of deployed contracts on blockchain explorers across multiple networks.
+ * This process occurs after successful deployment but before package publishing, ensuring
+ * that all deployed contract source code is publicly accessible and verified on-chain.
+ *
+ * The verification system is designed to be resilient to individual verification failures,
+ * allowing the release process to continue even if some verifications fail. This is important
+ * because verification services can be unreliable or have temporary issues.
  *
  * Key features:
- * - Reads deployment results from the deployment step
- * - Obtains verification API keys from environment variables or local file
- * - Runs the verification script with appropriate parameters
- * - Handles potential verification failures gracefully (non-blocking for releases)
- * - Warns about large numbers of contracts that might cause timeouts
+ * - Flexible verification key management (env variables or JSON file)
+ * - Chain-specific API key handling for various explorers
+ * - Processes the consolidated deployment results from multiple environments
+ * - Automatically detects and removes CSV headers before processing
+ * - Non-blocking error handling for resilient releases
+ * - Performance management with warnings for large batch verifications
+ * - Detailed logging of verification progress and results
+ * - Support for constructor arguments from deployment data
  */
 
 import { spawn } from 'child_process'

@@ -1,7 +1,19 @@
-#!/bin/bash
-
-# Function to load environment variables from .env file
-# with a preference for existing environment variables
+#!/usr/bin/env bash
+#
+# load_env.sh
+#
+# Utility for loading environment variables while preserving existing values.
+# Unlike direct loading of .env which overwrites existing variables, this script
+# only sets variables that aren't already defined in the environment.
+#
+# This allows for environment variables to be passed from parent processes
+# (like TypeScript scripts) that won't be overridden by values in .env files.
+#
+# Usage:
+#   source /path/to/load_env.sh
+#   load_env [optional_env_file_path]
+#
+# If no env file path is provided, it defaults to ".env" in the current directory.
 load_env() {
   local env_file="$1"
   

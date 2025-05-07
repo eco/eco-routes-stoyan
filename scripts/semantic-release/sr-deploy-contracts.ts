@@ -1,25 +1,20 @@
 /**
- * @file deploy-contracts.ts
+ * @file sr-deploy-contracts.ts
  *
- * This file is responsible for deploying smart contracts using deterministic
- * deployment (CREATE3) with specific salts derived from the package version.
- *
- * The deterministic deployment approach ensures that contracts with the same version
- * and salt will have the same address across different deployments and networks,
- * which is critical for cross-chain protocols.
+ * Handles the deterministic deployment of smart contracts across multiple chains
+ * and environments with version-derived salts.
+ * 
+ * This is a critical part of the semantic release process for cross-chain protocols,
+ * ensuring contracts deploy to the same addresses across all networks. The deployment
+ * uses CREATE2/CREATE3 with carefully computed salts based on the semantic version number.
  *
  * Key features:
- * - Supports deploying to multiple environments (production and pre-production)
- * - Uses different salts for different environments but in the same deployment process
- * - Generates production and pre-production addresses from semantic version
- * - Stores deployment results for consumption by client libraries
- *
- * The deployment process:
- * 1. Computes salt values based on semantic version
- * 2. Creates a single results file for all deployments
- * 3. Deploys contracts to each environment with appropriate salt, skipping if already deployed
- * 4. Collects and combines results from all deployments
- * 5. Formats and saves deployment data to JSON for use in the package
+ * - Salt generation from semantic version for deterministic addresses
+ * - Multi-environment support (production and pre-production)
+ * - Parallel deployment to multiple chains with environment-specific salts
+ * - Consolidated tracking of deployment results across all chains and environments
+ * - JSON output generation for client library consumption
+ * - CSV generation for contract verification tools
  */
 import path from 'path'
 import fs from 'fs'
@@ -63,6 +58,14 @@ interface DeploymentResult {
   success: boolean
 }
 
+/**
+ * Deploys Eco Routes contracts to multiple chains with deterministic addressing.
+ *
+ * @param context - The semantic release context containing version info and logger
+ * @param packageName - The name of the package being released
+ * @returns Promise that resolves when all deployments are complete
+ * @throws Error if deployment fails on any chain
+ */
 export async function deployRoutesContracts(
   context: SemanticContext,
   packageName: string,
@@ -106,9 +109,18 @@ export async function deployRoutesContracts(
 }
 
 /**
- * Execute the deploy.sh script to deploy contracts
- * @param context Semantic release context
- * @returns Promise that resolves when deployment is complete
+ * Generates the deployAddresses.json file from contract deployment results.
+ * This file is a critical artifact that maps chain IDs to contract addresses and
+ * is included in the published package for client consumption.
+ * 
+ * The function processes raw deployment data into a structured JSON format,
+ * grouping contracts by chain ID and environment, and formatting addresses
+ * according to EIP-55 checksum standards.
+ *
+ * @param contracts - Array of deployed contract objects with chain ID, name, and address
+ * @param context - Semantic release context with logger and working directory
+ * @returns Promise that resolves when JSON file is successfully written
+ * @throws Error if JSON generation or file writing fails
  */
 async function generateDeploymentAddressesJSON(contracts: Contract[], context: SemanticContext): Promise<void> {
   const { nextRelease, logger, cwd } = context
@@ -134,70 +146,22 @@ async function generateDeploymentAddressesJSON(contracts: Contract[], context: S
 }
 
 /**
- * Deploy contracts using existing deployment infrastructure
- */
-// async function deployToEnv(
-//   logger: Logger,
-//   cwd: string,
-// ): Promise<void> {
-//   // Check for required environment variables
-//   validateEnvVariables([ENV_VARS.PRIVATE_KEY, ENV_VARS.ALCHEMY_API_KEY])
-
-//   // // Define output directory and ensure it exists
-//   // const outputDir = path.join(cwd, PATHS.OUTPUT_DIR)
-//   // const deployedContractFilePath = getDeployedAddressesJsonPath(cwd)
-//   // const resultsFile = getDeploymentResultsPath(cwd)
-
-//   // fs.mkdirSync(outputDir, { recursive: true })
-//   // fs.mkdirSync(path.dirname(deployedContractFilePath), { recursive: true })
-
-//   // // Initialize contracts collection
-//   // let allContracts: Contract[] = []
-
-//   // // Clean up the results file once at the beginning of all deployments
-//   // // This ensures we have a single file with all deployment results
-//   // if (fs.existsSync(resultsFile)) {
-//   //   logger.log(`Cleaning up previous deployment results file: ${resultsFile}`)
-//   //   fs.unlinkSync(resultsFile)
-//   // }
-
-//   // // Create an empty results file
-//   // fs.writeFileSync(resultsFile, '', 'utf-8')
-//   // logger.log(`Created empty deployment results file: ${resultsFile}`)
-
-//   // // Deploy contracts for each environment
-//   // for (const config of configs) {
-//   //   logger.log(`Deploying ${config.environment} contracts...`)
-
-//   // Deploy contracts and get results
-//   // const result = await deployContracts(logger, cwd)
-
-//   //   if (!result.success) {
-//   //     throw new Error(`Deployment failed for ${config.environment} environment`)
-//   //   }
-
-//   //   // Add environment info to contracts
-//   //   const contractsWithEnv = result.contracts.map((contract) => ({
-//   //     ...contract,
-//   //     environment: config.environment,
-//   //   }))
-
-//   //   allContracts = [...allContracts, ...contractsWithEnv]
-//   // }
-
-//   // // Save all contracts to JSON
-//   // const contractsJson = processContractsForJson(allContracts)
-//   // fs.writeFileSync(
-//   //   deployedContractFilePath,
-//   //   JSON.stringify(contractsJson, null, 2),
-//   // )
-
-//   // logger.log(`Contract addresses saved to ${deployedContractFilePath}`)
-// }
-
-/**
- * Process contracts array into the required JSON format based on CSV columns:
- * ChainID,Environment,ContractName,ContractAddress,ContractPath
+ * Processes contract deployment data into a structured JSON format for client consumption.
+ * This function transforms the raw contract deployment records into a nested structure
+ * that organizes contracts by chain ID and environment, making them easily accessible
+ * by client applications.
+ * 
+ * The output format follows the pattern:
+ * {
+ *   "chainId": {                   // Chain ID or "chainId-environment" for non-default environments
+ *     "ContractName": "0xAddress", // EIP-55 checksum address
+ *     ...
+ *   },
+ *   ...
+ * }
+ *
+ * @param contracts - Array of deployed Contract objects with chain ID, environment, name, and address
+ * @returns A nested record mapping chain IDs to contract name/address pairs
  */
 function processContractsForJson(
   contracts: Contract[],
@@ -233,71 +197,21 @@ function processContractsForJson(
 }
 
 /**
- * Deploy contracts using the MultiDeploy.sh script and return the results
- * @param salt The salt to use for deployment
- * @param logger Logger instance for output messages
- * @param cwd Current working directory
- * @param resultsFile Path to the results file
- * @returns DeploymentResult object with contracts and success status
+ * Deploys contracts using specific salts for each environment.
+ * This function handles the execution of the deployRoutes.sh script with
+ * appropriate environment variables, ensuring the SALT value is correctly
+ * passed to the bash script for deterministic deployment.
+ * 
+ * The function deploys to multiple environments in sequence, each with its own salt,
+ * and collects all deployment results into a consolidated record. It also generates
+ * a combined deployment results file for verification purposes.
+ *
+ * @param salts - Array of salt objects containing the hex value and environment name
+ * @param logger - Logger instance for output messages
+ * @param cwd - Current working directory
+ * @returns Promise resolving to the deployment result with contracts array and success status
+ * @throws Error if deployment process fails for any reason
  */
-// async function deployContracts(
-//   salt: string,
-//   logger: Logger,
-//   cwd: string,
-//   resultsFile: string,
-// ): Promise<DeploymentResult> {
-//   // Path to the deployment script
-//   const deployScriptPath = path.join(cwd, PATHS.DEPLOY_SCRIPT)
-//   const outputDir = path.join(cwd, PATHS.OUTPUT_DIR)
-
-//   if (!fs.existsSync(deployScriptPath)) {
-//     throw new Error(`Deployment script not found at ${deployScriptPath}`)
-//   }
-
-//   logger.log(`Running deployment with salt: ${salt}`)
-
-//   // Create output directory if it doesn't exist
-//   fs.mkdirSync(outputDir, { recursive: true })
-
-//   // Use the shared process execution utility
-//   async function executeProcess(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<number> {
-//     return executeProcessAsync(command, args, {
-//       env,
-//       stdio: 'inherit',
-//       shell: true,
-//       cwd,
-//     })
-//   }
-
-//   try {
-//     // Run the deployment script
-//     const exitCode = await executeProcess(deployScriptPath, [], {
-//       ...process.env,
-//       [ENV_VARS.SALT]: salt,
-//       [ENV_VARS.RESULTS_FILE]: resultsFile,
-//       [ENV_VARS.APPEND_RESULTS]: 'true', // Add a flag to indicate we want to append results
-//     })
-
-//     logger.log(`Deployment process exited with code ${exitCode}`)
-
-//     if (exitCode !== 0) {
-//       return { contracts: [], success: false }
-//     }
-
-//     // Read deployment results
-//     if (fs.existsSync(resultsFile)) {
-//       const contracts = parseDeploymentResults(resultsFile, logger)
-//       return { contracts, success: true }
-//     } else {
-//       logger.error(`Deployment results file not found at ${resultsFile}`)
-//       return { contracts: [], success: false }
-//     }
-//   } catch (error) {
-//     logger.error(`Deployment process failed: ${(error as Error).message}`)
-//     return { contracts: [], success: false }
-//   }
-// }
-
 async function deployContracts(
   salts: { value: Hex; environment: string }[],
   logger: Logger,
@@ -332,12 +246,19 @@ async function deployContracts(
 }
 
 /**
- * Parse all deployment results from the results file using CSV library
- * New format: ChainID,Environment,ContractName,ContractAddress,ContractPath
+ * Parses deployment results from the CSV-formatted results file and processes them into
+ * structured contract objects with standardized metadata. Handles aggregating results
+ * across multiple deployments and maintaining a comprehensive record of all deployments.
  *
  * @param filePath - Path to the CSV file containing deployment results
- * @param logger - Logger instance for output messages
- * @returns Array of Contract objects parsed from the file
+ * @param deployEnv - Environment name (e.g., 'default', 'pre') for categorizing results
+ * @param logger - Optional logger instance for output messages and debugging
+ * @returns Array of Contract objects parsed from the file with full metadata
+ * 
+ * @example
+ * // CSV format: ChainID,Environment,ContractName,ContractAddress,ContractPath
+ * // Parse deployment results for the 'pre' environment
+ * const contracts = parseDeploymentResults('results.csv', 'pre', logger);
  */
 function parseDeploymentResults(filePath: string, deployEnv: string, logger?: Logger): Contract[] {
   if (!fs.existsSync(filePath)) {

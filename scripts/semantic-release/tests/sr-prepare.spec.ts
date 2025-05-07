@@ -3,6 +3,7 @@ import * as buildPackageModule from '../sr-build-package'
 import * as deployModule from '../sr-deploy-contracts'
 import * as verifyModule from '../verify-contracts'
 import { exec } from 'child_process'
+import * as singletonFactoryModule from '../sr-singleton-factory'
 
 // Mock child_process.exec
 jest.mock('child_process', () => ({
@@ -22,12 +23,22 @@ jest.mock('../sr-build-package', () => ({
   setPublishingPackage: jest.fn()
 }))
 
-jest.mock('../deploy-contracts', () => ({
+jest.mock('../sr-deploy-contracts', () => ({
   deployRoutesContracts: jest.fn().mockResolvedValue(undefined)
 }))
 
 jest.mock('../verify-contracts', () => ({
   verifyContracts: jest.fn().mockResolvedValue(undefined)
+}))
+
+// Mock the sr-singleton-factory module
+jest.mock('../sr-singleton-factory', () => ({
+  deploySingletonFactory: jest.fn().mockResolvedValue(undefined)
+}))
+
+// Mock environment variables
+jest.mock('../../utils/envUtils', () => ({
+  validateEnvVariables: jest.fn()
 }))
 
 // Mock fs
@@ -78,10 +89,11 @@ describe('Prepare function', () => {
     // Act: Execute the prepare function
     await prepare(pluginConfig, context)
 
-    // Assert: Verify buildHardhat was called (exec was called for clean and build commands)
-    expect(exec).toHaveBeenCalledTimes(2)
+    // Assert: Verify buildHardhat was called (exec was called for clean, build, and forge build commands)
+    expect(exec).toHaveBeenCalledTimes(3)
     expect(exec).toHaveBeenCalledWith('npm run clean', expect.any(Function))
     expect(exec).toHaveBeenCalledWith('env COMPILE_MODE=production npm run build', expect.any(Function))
+    expect(exec).toHaveBeenCalledWith('forge build', expect.any(Function))
 
     // Assert: Verify deployRoutesContracts was called
     expect(deployModule.deployRoutesContracts).toHaveBeenCalledTimes(1)

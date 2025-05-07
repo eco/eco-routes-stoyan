@@ -1,7 +1,18 @@
 /**
  * @file processUtils.ts
  *
- * Utility functions for process execution using async/await.
+ * Utility functions for process execution using async/await with proper Promise handling.
+ * 
+ * These utilities provide a clean interface for executing shell commands and scripts,
+ * handling environment variables carefully to ensure they're passed correctly to child processes.
+ * This is critical for operations where environment variables like SALT need to be
+ * preserved from parent to child processes.
+ * 
+ * Key features:
+ * - Proper Promise-based wrappers around Node.js child_process
+ * - Environment variable handling with parent env inheritance
+ * - Standardized error handling and exit code management
+ * - Support for command timeouts
  */
 
 import { spawn } from 'child_process'

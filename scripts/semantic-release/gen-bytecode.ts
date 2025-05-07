@@ -1,3 +1,21 @@
+/**
+ * @file gen-bytecode.ts
+ * 
+ * Handles generation of deployment bytecode and initialization data for deterministic
+ * contract deployment across chains. This utility prepares the exact bytecode that
+ * will be deployed using CREATE2/CREATE3 deployers with specific salts.
+ * 
+ * The module handles:
+ * - Generation of correctly formatted initialization bytecode
+ * - Computation of constructor argument encoding
+ * - Preparation of deployment data for verification tools
+ * - Environment-specific salt processing for deterministic addresses
+ * - Creation of bytecode artifacts for multi-chain deployment
+ * 
+ * This process is critical for ensuring that contracts deploy to the same addresses
+ * across all chains when using the same salt, a key requirement for cross-chain
+ * protocols that need consistent addressing.
+ */
 import {
   encodeFunctionData,
   Hex,
@@ -275,11 +293,3 @@ export async function fetchDeployData(): Promise<string[]> {
     throw new Error(`Failed to fetch or parse deployment data from ${DEPLOY_DATA_URL}: ${(error as Error).message}`)
   }
 }
-
-// async function main() {
-//   generateDeploymentFile([{ name: 'test', value: '0x4dad9ff70cc0946e063bbeb57f1ded0f808a3026d96866d52157e150b507a986' }], 'bytecode_deployment.json')
-// }
-
-// main().catch((err) => {
-//   console.error('Error:', err)
-// })

@@ -43,10 +43,15 @@ jest.mock('viem', () => ({
   getAddress: jest.fn(address => address),
 }));
 
+// Mock environment variables
+jest.mock('../../utils/envUtils', () => ({
+  validateEnvVariables: jest.fn()
+}));
+
 // Create a mock for only the deployRoutesContracts function
-jest.mock('../deploy-contracts', () => {
+jest.mock('../sr-deploy-contracts', () => {
   // Get the original module to preserve functionality we're not mocking
-  const originalModule = jest.requireActual('../deploy-contracts');
+  const originalModule = jest.requireActual('../sr-deploy-contracts');
   
   // Create a mock of the deployToEnv function
   const mockDeployToEnv = jest.fn().mockResolvedValue(undefined);

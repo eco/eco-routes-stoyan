@@ -1,18 +1,26 @@
 /**
  * @file sr-publish.ts
  *
- * Handles publishing the built package to npm as part of the semantic-release process.
- * This is the final step in the semantic-release lifecycle.
+ * Manages the final publishing step in the semantic-release process, handling the
+ * distribution of built packages to npm and other registries. This is the culmination
+ * of the entire release pipeline, making the new version publicly available.
+ * 
+ * This module implements strict publishing controls and verification to ensure
+ * only properly built, tested, and authorized packages are published to registries.
+ * It includes safety mechanisms to prevent accidental publishing from development
+ * environments and handles proper version tagging.
  *
  * Key features:
- * - Controls whether packages are actually published (dry-run vs. real publish)
- * - Handles npm tag selection (latest vs. beta for prereleases)
- * - Publishes from the build directory with complete package contents
- * - Verifies package contents before publishing
- * - Returns metadata about the published package for semantic-release
- *
- * The publish step only executes in CI environments or when explicitly
- * enabled to prevent accidental publishing during development.
+ * - Environment-aware publishing decisions (CI vs. local development)
+ * - Comprehensive dry-run support for testing the release process
+ * - Intelligent tag selection (latest, next, beta) based on version type
+ * - Package integrity verification before publishing
+ * - Registry authentication and publishing authorization
+ * - Detailed logging and feedback on publish status
+ * - Publication metadata generation for semantic-release tracking
+ * 
+ * The publish step integrates with CI/CD pipelines and handles environment-specific
+ * authentication, ensuring secure credential management during the publishing process.
  */
 
 import { exec } from 'child_process'
@@ -28,10 +36,25 @@ dotenv.config()
 const execPromise = promisify(exec)
 
 /**
- * Publishes both packages to npm (the main package with Solidity files and the TypeScript-only package)
- * @param pluginConfig Plugin configuration
- * @param context The semantic release context
- * @returns Object containing package names and URLs
+ * Publishes both packages to npm: the main package with Solidity files and the TypeScript-only package.
+ * 
+ * This function implements the final step in the semantic-release lifecycle,
+ * publishing the built packages to npm with appropriate version tags. It handles
+ * both the main eco-routes package (containing Solidity files) and the TypeScript-only
+ * package for clients that don't need the Solidity source.
+ * 
+ * The publishing process includes:
+ * 1. Determining appropriate npm tag based on version type (latest, beta, etc.)  
+ * 2. Configuring package.json for each package type before publishing
+ * 3. Verifying the package build is complete and correct
+ * 4. Publishing packages with proper authentication
+ * 5. Handling dry-run mode for testing the publishing process
+ *
+ * @param pluginConfig - Plugin configuration options from semantic-release
+ * @param context - The semantic release context with version and logging information
+ * @returns Object containing published package names and their registry URLs
+ * 
+ * @throws Will throw an error if publishing fails for any reason
  */
 export async function publish(
   pluginConfig: any,
@@ -111,10 +134,29 @@ export async function publish(
 }
 
 /**
- * Determines whether packages should be published based on environment variables
+ * Determines whether packages should be published based on environment variables.
+ * 
+ * This function implements safety checks to prevent accidental publishing from
+ * development environments. It requires explicit confirmation via environment
+ * variables to proceed with actual publishing, otherwise defaults to dry-run mode.
  *
- * @param version - The version being published
- * @returns Boolean indicating whether to publish packages
+ * The decision logic includes:
+ * 1. Checking if running in a CI/CD environment (GitHub Actions)
+ * 2. Looking for an explicit override to force publishing
+ * 3. Logging the decision for transparency
+ * 4. Providing instructions for enabling actual publishing
+ *
+ * @param version - The version string being published for logging purposes
+ * @returns Boolean indicating whether to proceed with actual publishing (true) or dry-run mode (false)
+ * 
+ * @example
+ * // Check if we should publish the packages or just simulate
+ * const shouldPublish = shouldWePublish('1.2.3');
+ * if (shouldPublish) {
+ *   // Publish to npm
+ * } else {
+ *   // Just log what would be published
+ * }
  */
 export function shouldWePublish(version: string): boolean {
   // Check if running in GitHub Actions or local CI mode

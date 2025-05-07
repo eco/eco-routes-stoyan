@@ -1,18 +1,22 @@
 /**
  * @file sr-build-package.ts
  *
- * Responsible for building the TypeScript package for distribution to npm.
+ * Manages the build process for the eco-routes npm package, transforming
+ * compiled contracts and deployment information into a structured package
+ * that can be consumed by client applications.
+ * 
  * This process includes:
- *
- * 1. Collecting Solidity ABIs and contract artifacts for TypeScript consumption
- * 2. Creating type-safe contract interfaces and address exports
- * 3. Formatting deployed addresses for different chains
- * 4. Generating a CSV export of contract addresses for non-code consumption
- * 5. Setting up proper package.json with the right dependencies and metadata
- * 6. Compiling TypeScript code for distribution
- *
- * The resulting package enables developers to easily interact with the protocol's
- * deployed contracts with full type safety and current addresses.
+ * 1. Collecting and processing Solidity ABIs from contract artifacts
+ * 2. Creating type-safe TypeScript interfaces for contract interaction
+ * 3. Formatting deployed addresses across multiple chains and environments
+ * 4. Generating address exports for different network configurations
+ * 5. Setting up package.json with appropriate metadata and dependencies
+ * 6. Integrating documentation and type definitions for developer experience
+ * 7. Compiling and packaging TypeScript code for distribution
+ * 
+ * The resulting npm package enables developers to easily interact with the protocol's
+ * deployed contracts with full type safety, consistent addressing across chains,
+ * and proper versioning that matches the deployed contract implementations.
  */
 
 import fs from 'fs'
@@ -56,12 +60,23 @@ interface AbiFile {
 }
 
 /**
- * Builds the complete TypeScript package for distribution
+ * Builds the complete TypeScript package for distribution to npm.
  * This is the main entry point for the package building process that orchestrates
  * all the steps needed to create a distributable npm package with contract ABIs,
- * addresses, and TypeScript definitions
+ * addresses, and TypeScript definitions.
  *
- * @param context The semantic release context containing version and logging info
+ * The build process includes:
+ * 1. Collecting compiled contract artifacts (ABIs, bytecode)
+ * 2. Copying and filtering Solidity source files
+ * 3. Generating TypeScript type definitions from ABIs
+ * 4. Creating deployment address exports for all chains
+ * 5. Building distributable TypeScript modules
+ * 6. Packaging everything with proper metadata for npm
+ *
+ * @param context - The semantic release context containing version and logging info
+ * @returns Promise that resolves when the package build is complete
+ * 
+ * @throws Will throw an error if any part of the build process fails
  */
 export async function buildPackage(context: SemanticContext): Promise<void> {
   const { nextRelease, logger, cwd } = context
@@ -174,13 +189,23 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
 }
 
 /**
- * Generates TypeScript files from ABI JSON files
+ * Generates TypeScript files from ABI JSON files, creating type-safe contract interfaces.
  * Converts raw contract ABI JSON files into fully typed TypeScript modules
  * with proper typing for viem integration. Creates index files for easy imports
  * and removes the original JSON files to keep the package clean.
  *
- * @param buildDir The directory to build in
- * @param logger The logger to use for output messages
+ * The generated TypeScript files include:
+ * - Exported ABI constants with proper typing
+ * - Type definitions for contract interactions
+ * - Bytecode exports for contract deployment
+ * - Hierarchical index files for organized imports
+ *
+ * @param buildDir - The directory where build artifacts and generated files should be placed
+ * @param logger - The logger instance to use for output messages and errors
+ * 
+ * @example
+ * // Generate TypeScript files from ABIs in the build directory
+ * generateAbiTypeScriptFiles('/path/to/build', logger);
  */
 function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
   // Directory containing the JSON files
@@ -260,14 +285,23 @@ function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
 }
 
 /**
- * Generates a CSV file from the addresses JSON
- * Creates a human-readable CSV export of deployed contract addresses
- * by chain ID. This allows non-developers to easily access contract addresses
+ * Generates a human-readable CSV file from the addresses JSON for easy reference.
+ * Creates a standardized export of deployed contract addresses organized by chain ID,
+ * allowing non-developers to easily access and reference contract addresses
  * without parsing JSON or writing code.
  *
- * @param addresses Object containing chain IDs and contract addresses
- * @param buildDir Directory to store the output CSV
- * @param logger The logger instance for output messages
+ * The CSV format follows a consistent structure with:
+ * - Headers: ChainID, IntentSource, Inbox, HyperProver, MetaProver
+ * - One row per chain ID with all corresponding contract addresses
+ * - Empty cells for contract types not deployed on a particular chain
+ *
+ * @param addresses - Object containing chain IDs and contract addresses mapping
+ * @param buildDir - Directory to store the output CSV file
+ * @param logger - The logger instance for output messages and errors
+ * 
+ * @example
+ * // Generate CSV from deployment addresses
+ * generateCsvFile(deployedAddresses, '/path/to/build', logger);
  */
 function generateCsvFile(
   addresses: AddressesJson,
@@ -304,15 +338,25 @@ function generateCsvFile(
 }
 
 /**
- * Generates the main index.ts file with addresses exports
- * Creates the TypeScript entry point with type-safe exports of all contract
- * addresses and helper functions. Includes TypeScript type definitions for
- * chain configurations and utility functions to access addresses by chain ID.
+ * Generates the main index.ts file with type-safe contract addresses exports.
+ * Creates the TypeScript entry point with all necessary exports including
+ * ABIs, utilities, and contract addresses with proper TypeScript typing.
  *
- * @param addresses Object containing chain IDs and contract addresses
- * @param buildDir Directory to store the output file
- * @param version Package version number to embed in the file
- * @param logger The logger instance for output messages
+ * The generated index file includes:
+ * - All deployed contract addresses organized by chain ID
+ * - Type definitions for chain configurations and contract references
+ * - Helper functions for type-safe contract address retrieval
+ * - Version and git hash information for traceability
+ * - Re-exports of ABI and utility modules
+ *
+ * @param addresses - Object containing chain IDs and contract addresses mapping
+ * @param buildDir - Directory to store the generated index.ts file
+ * @param version - Package version number to embed in the file for reference
+ * @param logger - The logger instance for output messages and errors
+ * 
+ * @example
+ * // Generate main index.ts file with contract addresses
+ * generateIndexFile(addresses, '/path/to/build', '1.2.3', logger);
  */
 function generateIndexFile(
   addresses: AddressesJson,
@@ -347,10 +391,13 @@ export const EcoProtocolAddresses = ${JSON.stringify(addresses, null, 2)} as con
 export type EcoChainConfig = {
   ${CONTRACT_TYPES.map((type) => `${type}: Hex`).join(',\n  ')}
 }
-export type EcoChainIds = keyof typeof EcoProtocolAddresses;
-export type ContractName<T extends EcoChainIds> = keyof typeof EcoProtocolAddresses[T];
-
-export function getContractAddress<T extends EcoChainIds>(
+export type EcoChainIdsEnv = keyof typeof EcoProtocolAddresses
+export type EcoChainIds = Exclude<EcoChainIdsEnv, ${"`${string}-${string}`"}>;
+export type ContractName<T extends EcoChainIdsEnv> = keyof typeof EcoProtocolAddresses[T];
+export const EcoChainIdsArray: EcoChainIds[] = Object.keys(EcoProtocolAddresses).filter(
+  (chainId): chainId is EcoChainIds => !chainId.includes('-')
+);
+export function getContractAddress<T extends EcoChainIdsEnv>(
   chainId: T,
   contractName: ContractName<T>
 ): Hex {
@@ -417,14 +464,24 @@ function copyOtherPackageFiles(
 }
 
 /**
- * Creates tsconfig.json for TypeScript compilation
+ * Creates a tsconfig.json file for TypeScript compilation of the package.
  * Sets up the TypeScript compiler configuration for the npm package
  * with the right target settings, module type, and output directory.
- * This ensures the package is built with the correct settings for
- * compatibility with various JavaScript environments.
+ * 
+ * This configuration ensures the package is built with the correct settings for
+ * compatibility with various JavaScript environments and includes:
+ * - ES2020 target for modern JavaScript features
+ * - CommonJS module format for maximum compatibility
+ * - Declaration file generation for type safety
+ * - Strict type checking for code quality
+ * - Proper file inclusion/exclusion patterns
  *
- * @param buildDir Directory to create the config in
- * @param logger The logger instance for output messages
+ * @param buildDir - Directory where the tsconfig.json file should be created
+ * @param logger - The logger instance for output messages and errors
+ * 
+ * @example
+ * // Create tsconfig.json in the build directory
+ * createTsConfig('/path/to/build', logger);
  */
 function createTsConfig(buildDir: string, logger: Logger): void {
   const tsConfig = {
@@ -451,6 +508,31 @@ function createTsConfig(buildDir: string, logger: Logger): void {
   logger.log('Created tsconfig.json for the build')
 }
 
+/**
+ * Prepares the package.json for publishing by modifying it with the correct metadata
+ * for the specified package type (either main package or TypeScript-only package).
+ * 
+ * This function customizes the package.json with appropriate fields including:
+ * - Package name (either eco-routes or eco-routes-ts)
+ * - Current version from semantic release
+ * - Module entry points and type definitions
+ * - Files to include in the published package
+ * - Dependency specifications
+ * 
+ * The function maintains different configurations for the main package (with Solidity files)
+ * and the TypeScript-only package for different use cases.
+ *
+ * @param context - Semantic release context with version and logging information
+ * @param pubLib - Package identifier from PACKAGE constants defining which variant to build
+ * @returns Promise that resolves when package.json has been updated
+ * 
+ * @example
+ * // Set up the main package with full Solidity files
+ * await setPublishingPackage(context, PACKAGE.ROUTES_PACKAGE_NAME);
+ * 
+ * // Set up the TypeScript-only package
+ * await setPublishingPackage(context, PACKAGE.ROUTES_TS_PACKAGE_NAME);
+ */
 export async function setPublishingPackage(
   context: SemanticContext,
   pubLib: (typeof PACKAGE)[keyof typeof PACKAGE],

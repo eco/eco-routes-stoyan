@@ -1,9 +1,25 @@
 /**
  * @file sr-singleton-factory.ts
  *
- * This file is responsible for deploying the EIP-2470 Singleton Factory.
- * The Singleton Factory is a standard CREATE2 factory deployed at the same address on all EVM chains.
- * It serves as a foundation for deterministic deployments.
+ * Handles the deployment of the canonical EIP-2470 Singleton Factory contract. 
+ * This module is a critical prerequisite for deterministic contract deployment
+ * across multiple EVM chains during the semantic release process.
+ * 
+ * The Singleton Factory is a standard contract deployed to the same address
+ * (0xce0042B868300000d44A59004Da54A005ffdcf9f) on all EVM chains using a
+ * specific private key and nonce. It provides a CREATE2 mechanism that enables
+ * the deterministic deployment of contracts with consistent addresses across
+ * all chains that support the EVM.
+ * 
+ * This implementation:
+ * - Verifies if the factory is already deployed on each target chain
+ * - Deploys the factory using the canonical deployment process if not present
+ * - Handles the specific gas parameters needed for different networks
+ * - Ensures the factory is available for subsequent contract deployments
+ * - Integrates with the semantic-release workflow to prevent deployment failures
+ * 
+ * The presence of this factory is essential for the cross-chain consistency
+ * that the eco-routes protocol relies on for its operation.
  */
 
 import path from 'path'

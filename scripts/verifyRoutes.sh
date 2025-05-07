@@ -1,7 +1,26 @@
 #!/usr/bin/env bash
-
-# Script to verify contracts deployed using MultiDeploy.sh
-# This script reads deployment data from RESULTS_FILE and verification keys from VERIFICATION_KEYS_FILE
+#
+# verifyRoutes.sh
+#
+# This script verifies deployed contracts on blockchain explorers using Foundry's verify-contract.
+# It processes a CSV file with deployment data and uses chain-specific verification API keys.
+#
+# Features:
+# - Automatically removes CSV header line if present
+# - Supports verification on multiple chains with different API keys
+# - Retries verification on failure with a delay
+# - Uses RPC URLs from chain data for more reliable verification
+# - Provides detailed logging and summary statistics
+# - Handles constructor arguments correctly
+#
+# Environment variables:
+# - RESULTS_FILE: Path to the CSV file with deployment results
+# - VERIFICATION_KEYS_FILE: Path to JSON with API keys by chain ID
+# - VERIFICATION_KEYS: JSON string with API keys (alternative to file)
+# - CHAIN_DATA_URL: Optional URL to fetch chain RPC URLs
+#
+# CSV format expected:
+# ChainID,ContractAddress,ContractPath,ContractArguments
 
 # Load environment variables from .env, prioritizing existing env vars
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

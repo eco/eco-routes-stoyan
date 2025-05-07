@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
-
+#
 # load_chain_data.sh
-# Utility script to load chain data from URL or local file path
-# This function can be sourced and used by other scripts
+#
+# Utility function to fetch and parse chain configuration data from a URL or local file.
+# Handles the loading of deployment-related chain information like RPC URLs and contract addresses.
+#
+# Usage:
+#   source /path/to/load_chain_data.sh
+#   CHAIN_DATA=$(load_chain_data "https://example.com/chain-data.json")
+#
+# The function returns valid JSON data that can be processed with jq.
+# It includes error handling for failed downloads and invalid JSON.
+# Expected data format is a JSON object mapping chain IDs to configuration objects:
+# {
+#   "1": { "url": "https://eth-mainnet.example.com", "mailbox": "0x..." },
+#   "42161": { "url": "https://arbitrum-one.example.com", "mailbox": "0x..." }
+# }
 
 # Function to load chain data JSON from URL or local file
 # Returns the JSON content via stdout

@@ -117,7 +117,5 @@ contract TestMessageBridgeProver is MessageBridgeProver {
         return "TestMessageBridgeProver";
     }
 
-    function version() external pure returns (string memory) {
-        return "2.0.1-beta.0-32c46008";
-    }
+    function version() external pure returns (string memory) { return "2.0.1-beta.0"; }
 }

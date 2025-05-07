@@ -1,9 +1,20 @@
 /**
  * @file helpers.ts
  *
- * Helper functions for semantic-release plugin lifecycle events.
- * This file contains shared functionality used by multiple lifecycle events
- * such as fetching npm packages, comparing versions, and other utilities.
+ * Provides utility functions and shared helpers for the semantic-release workflow.
+ * 
+ * This module contains common functionality used across different semantic-release
+ * lifecycle events, including version handling, logging, package management,
+ * and file operations. These utilities ensure consistent behavior and reduce
+ * code duplication throughout the release process.
+ * 
+ * Key features:
+ * - Standardized logging interface matching semantic-release conventions
+ * - Version comparison and manipulation utilities
+ * - Package manifest handling and transformation
+ * - File system operations specific to the release process
+ * - Package distribution and publication helpers
+ * - Metadata handling and transformation
  */
 
 import fs from 'fs'
@@ -21,11 +32,19 @@ export interface Logger {
 
 /**
  * Fetches information about the latest version of a package with the same major.minor version
+ * allowing for comparison with the current version being released to ensure proper versioning.
  *
- * @param packageName - Name of the package to check
- * @param version - Current version being released
+ * @param packageName - Name of the package to check in the npm registry
+ * @param version - Current version being released in semver format
  * @param logger - Logger instance for output messages
- * @returns Object containing version info or null if not found
+ * @returns Object containing the published version and a flag indicating if current version is newer, or null if no published version exists
+ * 
+ * @example
+ * // Get latest version info for 'eco-routes' with version '1.2.3'
+ * const versionInfo = await fetchLatestPackageVersion('eco-routes', '1.2.3', logger);
+ * if (versionInfo && !versionInfo.isNewer) {
+ *   throw new Error('Current version is not newer than published version');
+ * }
  */
 export async function fetchLatestPackageVersion(
   packageName: string,
@@ -83,10 +102,17 @@ export async function fetchLatestPackageVersion(
 }
 
 /**
- * List all files in a directory recursively
+ * Lists all files in a directory recursively, maintaining relative paths,
+ * which is useful for copying entire directory structures while preserving
+ * the hierarchy of files.
  *
- * @param dir - Directory to list files from
- * @returns Array of relative file paths
+ * @param dir - Absolute path to the directory to list files from
+ * @returns Array of file paths relative to the provided directory
+ * 
+ * @example
+ * // Get all files in the contracts directory
+ * const files = listFilesRecursively('/path/to/contracts');
+ * // Result: ['Contract.sol', 'interfaces/IContract.sol', ...]
  */
 export function listFilesRecursively(dir: string): string[] {
   const files: string[] = []
@@ -111,19 +137,33 @@ export function listFilesRecursively(dir: string): string[] {
 }
 
 /**
- * Validates that the semantic version follows proper formatting rules
+ * Validates that a string follows proper semantic versioning (semver) formatting rules,
+ * ensuring it can be properly processed by deployment scripts and package managers.
  *
- * @param version - Version string to validate
- * @returns Whether the version is valid
+ * @param version - Version string to validate (e.g., '1.2.3' or '1.2.3-beta.1')
+ * @returns Boolean indicating whether the version is valid according to semver rules
+ * 
+ * @example
+ * // Check if a version string is valid
+ * if (!isValidVersion('1.2.x')) {
+ *   throw new Error('Invalid version format');
+ * }
  */
 export function isValidVersion(version: string): boolean {
   return !!semver.valid(version)
 }
 
 /**
- * Reads the package.json file from the current working directory
- * @param directoryPath - Current working directory
- * @returns
+ * Reads and parses the package.json file from the specified directory path,
+ * providing access to package metadata, version information, dependencies, and scripts.
+ *
+ * @param directoryPath - Path to the directory containing package.json
+ * @returns Parsed package.json content as a JavaScript object
+ * 
+ * @example
+ * // Get package information from the current directory
+ * const packageInfo = getPackageInfo('/path/to/project');
+ * console.log(`Package name: ${packageInfo.name}, version: ${packageInfo.version}`);
  */
 export function getPackageInfo(directoryPath: string): Record<string, any> {
   return JSON.parse(

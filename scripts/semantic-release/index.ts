@@ -1,20 +1,26 @@
 /**
  * @file index.ts
  *
- * Main entry point for the eco-routes semantic-release plugin.
- * Exports all lifecycle hooks that this plugin implements.
+ * The main entry point and orchestrator for the eco-routes semantic-release plugin system.
+ * This module exports all lifecycle hooks that integrate with semantic-release,
+ * providing a complete automated release pipeline for smart contract projects.
+ * 
+ * The plugin implements a comprehensive workflow that handles everything from
+ * version determination to contract deployment, verification, and package publishing.
+ * It ensures that all deployment addresses are consistent across chains and properly
+ * packaged for consumption by client applications.
  *
- * Semantic Release Lifecycle Order:
- * 1. verifyConditions - validate environment and versions
- * 2. analyzeCommits - determine next version (built-in to semantic-release)
- * 3. verifyRelease - additional verification (optional, not implemented here)
- * 4. generateNotes - create release notes (built-in to semantic-release)
- * 5. version - update version information in Solidity files and package.json
- * 6. prepare - build, deploy contracts using deterministic addresses, verify contracts
- * 7. publish - publish the packaged library to npm
- *
- * This plugin enables automated versioning, contract deployment, and publishing
- * as part of a continuous delivery pipeline for the Eco Routes protocol.
+ * Semantic Release Lifecycle Implementation:
+ * 1. verifyConditions - Validates environment, credentials, and prerequisites
+ * 2. analyzeCommits - Determines the next version (using semantic-release core)
+ * 3. generateNotes - Creates release notes (using semantic-release core)
+ * 4. version - Updates version information in Solidity files and package.json
+ * 5. prepare - Builds, deploys contracts with deterministic addresses, verifies contracts
+ * 6. publish - Publishes the packaged library to npm with proper versioning
+ * 
+ * This plugin architecture allows for separation of concerns while maintaining
+ * a coordinated release process that handles both on-chain (smart contracts) and
+ * off-chain (npm package) components of the protocol in a single automated flow.
  */
 
 import { prepare } from './sr-prepare'

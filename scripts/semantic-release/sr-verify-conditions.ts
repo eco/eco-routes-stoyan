@@ -1,17 +1,27 @@
 /**
  * @file sr-verify-conditions.ts
  *
- * Implements the verifyConditions step in the semantic-release lifecycle.
- * This is the first step that runs in the process and ensures all prerequisites
- * are met before attempting a release.
+ * Ensures all prerequisites are met before beginning the semantic release process.
+ * As the first step in the release pipeline, this verification acts as a gatekeeper
+ * to prevent attempted releases that would fail later in the process.
+ * 
+ * This module implements comprehensive validation of the environment, credentials,
+ * package configuration, and deployment requirements before proceeding with any
+ * further release steps. It provides early detection of potential issues and
+ * clear, actionable error messages when requirements aren't met.
  *
- * The verification process includes:
- * - Checking environment variables for deployment credentials
- * - Validating package.json and its fields
- * - Ensuring the new version is valid and greater than existing versions
- * - Verifying npm publishing credentials
- *
- * If any verification fails, the release process is aborted with a clear error message.
+ * Comprehensive verification checks include:
+ * - Required environment variables and deployment credentials
+ * - Package.json structure, completeness, and validity
+ * - Smart contract compilation readiness
+ * - npm registry authentication and publishing permissions
+ * - Git repository status and access rights
+ * - Version compatibility with existing releases
+ * - Deployment key and verification key availability
+ * 
+ * By validating all requirements upfront, this step prevents issues that would
+ * otherwise be discovered later in the release process, after significant time
+ * and resources have been invested.
  */
 
 import path from 'path'
@@ -27,18 +37,31 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 /**
- * Verifies conditions before a release can proceed
- * This is the first step in the semantic-release lifecycle
+ * Verifies all required conditions are met before a release can proceed.
+ * 
+ * This function implements the first step in the semantic-release lifecycle,
+ * acting as a gatekeeper to prevent releases that would fail later in the process.
+ * It performs comprehensive validation of the environment, credentials, and
+ * package configuration before allowing the release to continue.
  *
- * This function:
- * 1. Checks that required environment variables are set for deployments
- * 2. Validates the package.json exists and has required fields
- * 3. Verifies the next version is valid and greater than what's published
- * 4. Ensures publishing credentials are available in the environment
+ * The verification process includes:
+ * 1. Checking that all required environment variables are set for deployments and publishing
+ * 2. Validating the package.json exists and contains all necessary fields
+ * 3. Verifying the next version is valid according to semver and greater than what's published
+ * 4. Ensuring npm publishing credentials are available in the environment
+ * 5. Validating that release conditions are appropriate for the current context
  *
- * @param pluginConfig - Plugin configuration options
- * @param context - Semantic release context with version and logging info
- * @throws Error if any verification check fails
+ * @param pluginConfig - Plugin configuration options from semantic-release
+ * @param context - Semantic release context with version, logger and environment info
+ * @returns Promise that resolves when all conditions are verified successfully
+ * @throws Error with detailed message if any verification check fails
+ * 
+ * @example
+ * // This function is called by semantic-release automatically
+ * // Usage in semantic-release configuration:
+ * module.exports = {
+ *   verifyConditions
+ * }
  */
 export async function verifyConditions(
   pluginConfig: SemanticPluginConfig,
