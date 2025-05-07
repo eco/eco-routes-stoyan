@@ -120,6 +120,7 @@ jobs:
           ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           CHAIN_DATA_URL: ${{ secrets.CHAIN_DATA_URL }}
           BYTECODE_PATH: ${{ secrets.BYTECODE_PATH }}
+          RESULTS_FILE: ${{ secrets.RESULTS_FILE }}
           # VERIFICATION_KEYS is already set by aws-secretsmanager-get-secrets
         with: 
           cmd: semantic:pub
