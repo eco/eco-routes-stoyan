@@ -82,6 +82,7 @@ jobs:
         uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0 # Needed for semantic-release to generate changelogs
+          token: ${{ secrets.GITHUB_TOKEN }} # Use token with push permissions
 
       - name: Setup Node.js
         uses: actions/setup-node@v4.1.0
@@ -135,13 +136,17 @@ jobs:
       - name: Create Git Tag
         if: ${{ success() && github.event.client_payload.tag != '' }}
         run: |
+          # Configure git with GitHub Actions bot identity
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
           # Get the current branch name
           BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
           
           # Create the tag using the passed tag value from eco-chains
           git tag "v${{ github.event.client_payload.tag }}" -m "Release v${{ github.event.client_payload.tag }} triggered from eco-chains"
           
-          # Push the tag to the remote repository
-          git push origin "v${{ github.event.client_payload.tag }}"
+          # Push the tag to the remote repository using the provided token
+          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" "v${{ github.event.client_payload.tag }}"
           
           echo "Successfully created and pushed tag v${{ github.event.client_payload.tag }} on branch $BRANCH_NAME"
