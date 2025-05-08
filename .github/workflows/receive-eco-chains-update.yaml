@@ -30,12 +30,11 @@ on:
           - mainnet
 
 jobs:
-  create-update-pr:
-    name: Create Update PR
+  direct-commit:
+    name: Direct Commit to Default Branch
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
@@ -60,24 +59,17 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
-          
-          # Create a unique branch name
-          BRANCH_NAME="eco-chains-update-$TAG-$(date +%s)"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-      - name: Configure Git and checkout new branch
+      - name: Configure Git and checkout default branch
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Checkout the default branch first to ensure we're working from the latest
+          # Checkout the default branch to ensure we're working from the latest
           git checkout ${{ steps.get-default-branch.outputs.default_branch }}
           git pull
-          
-          # Create and checkout new branch
-          git checkout -b ${{ steps.set-vars.outputs.branch_name }}
 
-      - name: Generate semantic commit message and create commits
+      - name: Create semantic commit and push directly
         id: create-commit
         run: |
           # Determine appropriate semantic prefix based on version type
@@ -105,55 +97,26 @@ jobs:
           
           echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
           
-          # First commit - empty semantic commit for version bump
-          git commit --allow-empty -m "$COMMIT_MESSAGE"
+          # Create semantic commit with a real change to ensure it can be committed
+          mkdir -p .github/eco-chains-updates
+          UPDATE_FILE=".github/eco-chains-updates/update-$TAG-$(date +%s).txt"
           
-          # Second commit - create a temporary file for PR changes
-          mkdir -p .github/temp
-          echo "Chain version update: $TAG" > .github/temp/chain-update.txt
-          echo "Environment: ${{ steps.set-vars.outputs.environment }}" >> .github/temp/chain-update.txt
-          echo "Update timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> .github/temp/chain-update.txt
-          git add .github/temp/chain-update.txt
-          git commit -m "chore: add chain update tracking file [skip ci]"
+          echo "Chain version update: $TAG" > $UPDATE_FILE
+          echo "Environment: ${{ steps.set-vars.outputs.environment }}" >> $UPDATE_FILE
+          echo "Update timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $UPDATE_FILE
+          echo "Version type: $VERSION_TYPE" >> $UPDATE_FILE
           
-          # Push the branch with both commits
-          git push -u origin ${{ steps.set-vars.outputs.branch_name }}
-
-      - name: Create Pull Request
-        id: create-pr
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const { data: pullRequest } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: "Chain update from eco-chains ${{ steps.set-vars.outputs.tag }}",
-              body: `This PR was automatically created by the eco-chains update workflow.
-              
-              - Updates chain data from eco-chains version: ${{ steps.set-vars.outputs.tag }}
-              - Target environment: ${{ steps.set-vars.outputs.environment }}
-              - Version type: ${{ steps.set-vars.outputs.version_type }}
-              
-              Once merged, this will trigger the semantic release process to publish a new version.`,
-              head: "${{ steps.set-vars.outputs.branch_name }}",
-              base: "${{ steps.get-default-branch.outputs.default_branch }}"
-            });
-            
-            // Add labels to the PR
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pullRequest.number,
-              labels: ['automated-pr', 'eco-chains-update', '${{ steps.set-vars.outputs.version_type }}']
-            });
-            
-            console.log(`Pull Request created: ${pullRequest.html_url}`);
-            return {
-              pr_number: pullRequest.number,
-              pr_url: pullRequest.html_url
-            };
-      
-      - name: Check outputs
+          # Add and commit the file with semantic message
+          git add $UPDATE_FILE
+          git commit -m "$COMMIT_MESSAGE"
+          
+          # Push directly to the default branch
+          git push origin ${{ steps.get-default-branch.outputs.default_branch }}
+          
+          echo "Successfully pushed semantic commit to ${{ steps.get-default-branch.outputs.default_branch }} branch"
+          
+      - name: Output commit information
         run: |
-          echo "Pull Request URL - ${{ steps.create-pr.outputs.result.pr_url }}"
+          echo "Commit pushed to default branch: ${{ steps.get-default-branch.outputs.default_branch }}"
+          echo "Commit message: ${{ steps.create-commit.outputs.commit_message }}"
+          echo "This will trigger the semantic release process to publish a new version"
