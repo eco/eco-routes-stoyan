@@ -1,0 +1,44 @@
+name: Trigger Empty PR
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  empty-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create empty commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit --allow-empty -m "chore: trigger downstream workflow"
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: trigger downstream workflow"
+          title: "chore: trigger downstream workflow"
+          body: "Empty commit to trigger workflow"
+          branch: "trigger-workflow-branch"
+          base: "main"
+
+      - name: Enable PR Auto-Merge
+        if: steps.cpr.outputs.pull-request-url != ''
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash
+
+      - name: Approve PR (if required)
+        if: steps.cpr.outputs.pull-request-url != ''
+        run: gh pr review ${{ steps.cpr.outputs.pull-request-number }} --approve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
