@@ -21,6 +21,7 @@ on:
         required: false
         type: string
 
+        
 jobs:
   # Check if any commits have semantic release prefixes
   check-semantic-commits:
