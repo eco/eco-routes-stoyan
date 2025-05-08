@@ -22,10 +22,40 @@ on:
         type: string
 
 jobs:
+  # Check if any commits have semantic release prefixes
+  check-semantic-commits:
+    name: Check for Semantic Release Commits
+    runs-on: ubuntu-latest
+    # Skip this check if manually triggered
+    if: github.event_name != 'workflow_dispatch'
+    outputs:
+      has-semantic-commit: ${{ steps.check-commits.outputs.has_semantic_commit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 10 # Get enough history to check recent commits
+  
+      - name: Check for semantic release commits
+        id: check-commits
+        run: |
+          # Get the latest commit message
+          LATEST_COMMIT=$(git log -1 --pretty=format:"%s")
+          echo "Latest commit: $LATEST_COMMIT"
+            
+          # Check if it has semantic prefixes that trigger a release
+          if echo "$LATEST_COMMIT" | grep -E "^(fix|feat|breaking|chain|perf|docs\(README\)): " > /dev/null; then
+            echo "Detected commit with semantic release prefix"
+            echo "has_semantic_commit=true" >> $GITHUB_OUTPUT
+          else
+            echo "No semantic release prefix found in latest commit"
+            echo "has_semantic_commit=false" >> $GITHUB_OUTPUT
+          fi
   fetch-aws-secrets:
     name: Fetch AWS Secrets
-    # Only run if we found a semantic commit or this was manually triggered                                                         
-    if: github.event_name == 'workflow_dispatch' 
+    # Only run if this was manually triggered OR if there was a semantic commit
+    needs: [check-semantic-commits]
+    if: needs.check-semantic-commits.outputs.has-semantic-commit == 'true'
     runs-on: ubuntu-latest
     # Use environment from manual trigger or default to 'mainnet'
     environment: ${{ github.event.inputs.environment || 'mainnet' }}
