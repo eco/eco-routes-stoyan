@@ -132,11 +132,44 @@ jobs:
           # Run semantic-release to create a new release based on commits
           # npx semantic-release
           
-      # Create a git tag if semantic release step succeeded and tag was provided
-      - name: Create Git Tag
-        if: ${{ success() && github.event.client_payload.tag != '' }}
+  # Third job: Create a git tag based on version from eco-chains or manual input
+  create-git-tag:
+    name: Create Git Tag
+    runs-on: ubuntu-latest
+    # This job depends on successful completion of semantic-release
+    needs: semantic-release
+    permissions:
+      contents: write # Needed for creating and pushing tags
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      
+      # Debug step to see the event payload
+      - name: Debug Event Variables
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Event type: ${{ github.event.action }}"
+          echo "Manual version: '${{ github.event.inputs.version }}'"
+          echo "Client payload tag: '${{ github.event.client_payload.tag }}'"
+          echo "Combined version: '${{ github.event.inputs.version || github.event.client_payload.tag }}'"
+      
+      # Create tag if triggered by repository_dispatch with a tag
+      - name: Create Git Tag from Repository Dispatch
+        if: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag != '' }}
         uses: rickstaa/action-create-tag@v1
         with:
           tag: "v${{ github.event.client_payload.tag }}"
           message: "Release v${{ github.event.client_payload.tag }} triggered from eco-chains"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      # Create tag if triggered by workflow_dispatch with a version
+      - name: Create Git Tag from Manual Input
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version != '' }}
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "v${{ github.event.inputs.version }}"
+          message: "Release v${{ github.event.inputs.version }} created manually"
           github_token: ${{ secrets.GITHUB_TOKEN }}
