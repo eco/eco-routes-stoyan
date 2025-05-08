@@ -78,7 +78,7 @@ jobs:
           
           # Map version type to semantic prefix according to .releaserc.json rules
           if [ "$VERSION_TYPE" == "patch" ]; then
-            PREFIX="chain"  # Using "chain" type which maps to patch in .releaserc.json
+            PREFIX="fix"  # Using "chain" type which maps to patch in .releaserc.json
           elif [ "$VERSION_TYPE" == "minor" ]; then
             PREFIX="feat"   # Using "feat" type which maps to minor in .releaserc.json
           elif [ "$VERSION_TYPE" == "major" ]; then
