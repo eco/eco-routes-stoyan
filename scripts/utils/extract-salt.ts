@@ -12,8 +12,7 @@ export async function determineSalts(
   logger: Logger,
 ): Promise<{ rootSalt: Hex; preprodRootSalt: Hex }> {
   // Extract version components
-  const [major, minor] = version.split('.')
-  const versionBase = `${major}.${minor}`
+  const versionBase = getBaseVersion(version, logger)
 
   // major/minor version - calculate fresh salt
   logger.log(`major/minor version (${versionBase}), calculating salt`)
@@ -24,4 +23,22 @@ export async function determineSalts(
   logger.log(`Using salt for pre-production: ${preprodRootSalt}`)
 
   return { rootSalt, preprodRootSalt }
+}
+
+/**
+ * @description This function extracts the major and minor version from a semantic version string.
+ * It splits the version string by the dot (.) character and joins the first two parts (major and minor) back together.
+ * 
+ * @param version the semver version string
+ * @param logger the logger instance
+ * @returns 
+ */
+export function getBaseVersion(
+  version: string,
+  logger: Logger,
+): string {
+  // Extract major and minor version
+  const versionBase = version.split('.').slice(0, 2).join('.')
+  logger.log(`Extracted base version: ${versionBase}`)
+  return versionBase
 }

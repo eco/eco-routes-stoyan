@@ -29,6 +29,7 @@ import * as path from 'path'
 import { execSync } from 'child_process'
 import { PATHS } from './constants'
 import { Logger } from './helpers'
+import { getBaseVersion } from '../utils/extract-salt'
 
 /**
  * Gets the short git hash for the current commit, which is used to embed
@@ -73,8 +74,8 @@ export function updateSolidityVersions(
 ): number {
   const contractsDir = path.join(cwd, 'contracts')
   let updatedCount = 0
-
-  logger.log(`Updating Solidity files to version ${version}`)
+  const baseVersion = getBaseVersion(version, logger)
+  logger.log(`Updating Solidity files to base version ${baseVersion} from whole version ${version}-${getGitHashShort()}`)
 
   // Recursive function to traverse directories and update .sol files
   function updateDirectory(dir: string): void {
@@ -97,7 +98,7 @@ export function updateSolidityVersions(
         if (versionRegex.test(content)) {
           // const newVersionFunction = `function version() external pure returns (string memory) { return "${version}-${gitHash}"; }`
           // Remove git hash as it causes change in bytecode
-          const newVersionFunction = `function version() external pure returns (string memory) { return "${version}"; }`
+          const newVersionFunction = `function version() external pure returns (string memory) { return "${baseVersion}"; }`
           const updatedContent = content.replace(
             versionRegex,
             newVersionFunction,
