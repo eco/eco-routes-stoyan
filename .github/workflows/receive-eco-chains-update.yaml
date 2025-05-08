@@ -23,7 +23,7 @@ on:
       environment:
         description: "Environment to deploy to"
         required: true
-        default: "testnet"
+        default: "mainnet"
         type: choice
         options:
           - testnet
@@ -54,7 +54,7 @@ jobs:
           # Use inputs for workflow_dispatch or client_payload for repository_dispatch
           TAG="${{ github.event.inputs.tag || github.event.client_payload.tag }}"
           VERSION_TYPE="${{ github.event.inputs.version_type || github.event.client_payload.version_type || 'patch' }}"
-          ENVIRONMENT="${{ github.event.inputs.environment || github.event.client_payload.environment || 'testnet' }}"
+          ENVIRONMENT="${{ github.event.inputs.environment || github.event.client_payload.environment || 'mainnet' }}"
           
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
@@ -76,17 +76,18 @@ jobs:
           VERSION_TYPE="${{ steps.set-vars.outputs.version_type }}"
           TAG="${{ steps.set-vars.outputs.tag }}"
           
+          # Map version type to semantic prefix according to .releaserc.json rules
           if [ "$VERSION_TYPE" == "patch" ]; then
-            PREFIX="fix"
+            PREFIX="chain"  # Using "chain" type which maps to patch in .releaserc.json
           elif [ "$VERSION_TYPE" == "minor" ]; then
-            PREFIX="feat"
+            PREFIX="feat"   # Using "feat" type which maps to minor in .releaserc.json
           elif [ "$VERSION_TYPE" == "major" ]; then
-            PREFIX="break"
+            PREFIX="breaking" # Using "breaking" type which maps to major in .releaserc.json
           else
-            PREFIX="fix"
+            PREFIX="chain"  # Default to patch/chain if unspecified
           fi
           
-          # Create commit message with appropriate semantic prefix for version bump
+          # Create commit message with appropriate semantic prefix
           COMMIT_MESSAGE="$PREFIX: update chain data from eco-chains $TAG"
           if [ "$VERSION_TYPE" == "major" ]; then
             # For major versions, add the BREAKING CHANGE footer
@@ -97,18 +98,9 @@ jobs:
           
           echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
           
-          # Create semantic commit with a real change to ensure it can be committed
-          mkdir -p .github/eco-chains-updates
-          UPDATE_FILE=".github/eco-chains-updates/update-$TAG-$(date +%s).txt"
-          
-          echo "Chain version update: $TAG" > $UPDATE_FILE
-          echo "Environment: ${{ steps.set-vars.outputs.environment }}" >> $UPDATE_FILE
-          echo "Update timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $UPDATE_FILE
-          echo "Version type: $VERSION_TYPE" >> $UPDATE_FILE
-          
-          # Add and commit the file with semantic message
-          git add $UPDATE_FILE
-          git commit -m "$COMMIT_MESSAGE"
+          # Create an empty commit with the semantic message
+          # This is sufficient to trigger semantic-release based on the commit message
+          git commit --allow-empty -m "$COMMIT_MESSAGE"
           
           # Push directly to the default branch
           git push origin ${{ steps.get-default-branch.outputs.default_branch }}
