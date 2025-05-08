@@ -62,19 +62,12 @@ jobs:
           BRANCH_NAME="eco-chains-update-$TAG-$(date +%s)"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-      - name: Create branch for changes
+      - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Checkout default branch first to ensure we're working from the latest
-          git checkout ${{ steps.get-default-branch.outputs.default_branch }}
-          git pull origin ${{ steps.get-default-branch.outputs.default_branch }}
-          
-          # Create and checkout a new branch based on the default branch
-          git checkout -b ${{ steps.set-vars.outputs.branch_name }}
 
-      - name: Create semantic commit
+      - name: Generate semantic commit message
         id: create-commit
         run: |
           # Determine appropriate semantic prefix based on version type
@@ -101,13 +94,10 @@ jobs:
           fi
           
           echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
-          
-          # Create an empty commit with the semantic message
-          git commit --allow-empty -m "$COMMIT_MESSAGE"
-          git push --set-upstream origin ${{ steps.set-vars.outputs.branch_name }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        id: create-pr
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: ${{ steps.create-commit.outputs.commit_message }}
@@ -127,3 +117,9 @@ jobs:
             eco-chains-update
             ${{ steps.set-vars.outputs.version_type }}
           draft: false
+      
+      - name: Check outputs
+        if: steps.create-pr.outputs.pull-request-number
+        run: |
+          echo "Pull Request Number - ${{ steps.create-pr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.create-pr.outputs.pull-request-url }}"
