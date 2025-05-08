@@ -111,4 +111,17 @@ jobs:
         run: |
           echo "Commit pushed to default branch: ${{ steps.get-default-branch.outputs.default_branch }}"
           echo "Commit message: ${{ steps.create-commit.outputs.commit_message }}"
-          echo "This will trigger the semantic release process to publish a new version"
+          
+      # Manually trigger the semantic-release workflow
+      - name: Trigger Semantic Release Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'run-semantic-release.yaml',
+              ref: '${{ steps.get-default-branch.outputs.default_branch }}'
+            });
+            console.log('Triggered semantic-release workflow manually');

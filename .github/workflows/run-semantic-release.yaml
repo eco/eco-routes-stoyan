@@ -56,7 +56,7 @@ jobs:
     name: Fetch AWS Secrets
     # Only run if this was manually triggered OR if there was a semantic commit
     needs: [check-semantic-commits]
-    if: needs.check-semantic-commits.outputs.has-semantic-commit == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.check-semantic-commits.outputs.has-semantic-commit == 'true'
     runs-on: ubuntu-latest
     # Use environment from manual trigger or default to 'mainnet'
     environment: ${{ github.event.inputs.environment || 'mainnet' }}
