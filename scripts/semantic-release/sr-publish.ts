@@ -87,7 +87,8 @@ export async function publish(
   try {
     // Determine the tag to use for publishing
     // Use 'latest' for stable releases, 'beta' for prerelease versions
-    const tag = nextRelease?.type === 'prerelease' || (version && version.includes('-')) ? 'beta' : 'latest'
+    const cleanVersion = version.split('-')
+    const tag = cleanVersion.length > 1  ? cleanVersion[1] : 'latest'
 
     logger.log(`Publishing packages version ${version} with tag ${tag}`)
 

@@ -1,0 +1,118 @@
+name: Process eco-chains Update
+
+# This workflow is triggered when eco-chains repository dispatches an event
+on:
+  repository_dispatch:
+    types: [eco-chains-tag-pushed]
+  # Optional manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag/version from eco-chains"
+        required: true
+        type: string
+      version_type:
+        description: "Version type for the update"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "testnet"
+        type: choice
+        options:
+          - testnet
+          - mainnet
+
+jobs:
+  create-update-pr:
+    name: Create Update PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set variables
+        id: set-vars
+        run: |
+          # Use inputs for workflow_dispatch or client_payload for repository_dispatch
+          TAG="${{ github.event.inputs.tag || github.event.client_payload.tag }}"
+          VERSION_TYPE="${{ github.event.inputs.version_type || github.event.client_payload.version_type || 'patch' }}"
+          ENVIRONMENT="${{ github.event.inputs.environment || github.event.client_payload.environment || 'testnet' }}"
+          
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          
+          # Create a unique branch name
+          BRANCH_NAME="eco-chains-update-$TAG-$(date +%s)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create branch for changes
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create and checkout a new branch
+          git checkout -b ${{ steps.set-vars.outputs.branch_name }}
+
+      - name: Create semantic commit
+        id: create-commit
+        run: |
+          # Determine appropriate semantic prefix based on version type
+          VERSION_TYPE="${{ steps.set-vars.outputs.version_type }}"
+          TAG="${{ steps.set-vars.outputs.tag }}"
+          
+          if [ "$VERSION_TYPE" == "patch" ]; then
+            PREFIX="fix"
+          elif [ "$VERSION_TYPE" == "minor" ]; then
+            PREFIX="feat"
+          elif [ "$VERSION_TYPE" == "major" ]; then
+            PREFIX="break"
+          else
+            PREFIX="fix"
+          fi
+          
+          # Create commit message with appropriate semantic prefix
+          COMMIT_MESSAGE="$PREFIX: update chain data from eco-chains $TAG"
+          if [ "$VERSION_TYPE" == "major" ]; then
+            # For major versions, add the BREAKING CHANGE footer
+            COMMIT_MESSAGE="$COMMIT_MESSAGE
+            
+            BREAKING CHANGE: Updated chain data from eco-chains that requires major version bump"
+          fi
+          
+          echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          
+          # Create an empty commit with the semantic message
+          git commit --allow-empty -m "$COMMIT_MESSAGE"
+          git push --set-upstream origin ${{ steps.set-vars.outputs.branch_name }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: ${{ steps.create-commit.outputs.commit_message }}
+          title: "Chain update from eco-chains ${{ steps.set-vars.outputs.tag }}"
+          body: |
+            This PR was automatically created by the eco-chains update workflow.
+            
+            - Updates chain data from eco-chains version: ${{ steps.set-vars.outputs.tag }}
+            - Target environment: ${{ steps.set-vars.outputs.environment }}
+            - Version type: ${{ steps.set-vars.outputs.version_type }}
+            
+            Once merged, this will trigger the semantic release process to publish a new version.
+          branch: ${{ steps.set-vars.outputs.branch_name }}
+          base: main
+          labels: |
+            automated-pr
+            eco-chains-update
+            ${{ steps.set-vars.outputs.version_type }}
+          draft: false
