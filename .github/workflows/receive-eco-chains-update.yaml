@@ -39,6 +39,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get default branch
+        id: get-default-branch
+        run: |
+          # Get the default branch of the repository
+          DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+          echo "default_branch=$DEFAULT_BRANCH" >> $GITHUB_OUTPUT
+
       - name: Set variables
         id: set-vars
         run: |
@@ -60,7 +67,11 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create and checkout a new branch
+          # Checkout default branch first to ensure we're working from the latest
+          git checkout ${{ steps.get-default-branch.outputs.default_branch }}
+          git pull origin ${{ steps.get-default-branch.outputs.default_branch }}
+          
+          # Create and checkout a new branch based on the default branch
           git checkout -b ${{ steps.set-vars.outputs.branch_name }}
 
       - name: Create semantic commit
@@ -110,7 +121,7 @@ jobs:
             
             Once merged, this will trigger the semantic release process to publish a new version.
           branch: ${{ steps.set-vars.outputs.branch_name }}
-          base: main
+          base: ${{ steps.get-default-branch.outputs.default_branch }}
           labels: |
             automated-pr
             eco-chains-update
