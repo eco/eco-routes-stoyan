@@ -177,13 +177,13 @@ The deployment system consists of several interconnected components:
    # Required for deployment
    PRIVATE_KEY=0x...                # Deployer wallet private key
    ALCHEMY_API_KEY=...              # API key for Alchemy RPC endpoints
-   
+
    # For contract verification
    VERIFICATION_KEYS={"10":"your_api_key","8453":"your_api_key",...}
-   
+
    # For publishing (CI environment)
    NPM_TOKEN=...                    # NPM token with publish rights
-   
+
    # Optional overrides
    SALT=0x...                       # Override the default version-based salt
    RESULTS_FILE=./path/to/file.csv  # Custom path for deployment results
@@ -202,21 +202,26 @@ The deployment system consists of several interconnected components:
 The deployment process follows these steps:
 
 1. **Version Determination**:
+
    - Based on semantic versioning from git commits
    - Updates Solidity files with new version strings
 
 2. **Bytecode Generation**:
+
    ```bash
    yarn genBytecode
    ```
+
    - Generates deployment bytecode with constructor arguments
    - Creates verification templates
    - Fetches target chain IDs from deployment configuration
 
 3. **Contract Deployment**:
+
    ```bash
    yarn deploy:plugin
    ```
+
    - Deploys contracts to all configured chains
    - Uses deterministic CREATE2/CREATE3 deployment
    - Records addresses in deployment results CSV

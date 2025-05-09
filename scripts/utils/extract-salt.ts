@@ -28,15 +28,12 @@ export async function determineSalts(
 /**
  * @description This function extracts the major and minor version from a semantic version string.
  * It splits the version string by the dot (.) character and joins the first two parts (major and minor) back together.
- * 
+ *
  * @param version the semver version string
  * @param logger the logger instance
- * @returns 
+ * @returns
  */
-export function getBaseVersion(
-  version: string,
-  logger: Logger,
-): string {
+export function getBaseVersion(version: string, logger: Logger): string {
   // Extract major and minor version
   const versionBase = version.split('.').slice(0, 2).join('.')
   logger.log(`Extracted base version: ${versionBase}`)

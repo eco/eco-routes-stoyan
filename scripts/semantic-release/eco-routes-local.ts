@@ -4,7 +4,7 @@
  * Local development test runner for the semantic-release process lifecycle.
  * This utility enables developers to test and debug the complete release pipeline
  * without requiring a CI environment or the actual semantic-release tool.
- * 
+ *
  * The module simulates the semantic-release process by manually invoking each
  * lifecycle step in the correct sequence with appropriate context. This allows
  * for rapid iteration and testing of release process changes without requiring
@@ -18,7 +18,7 @@
  * - Simulate different version scenarios and release types
  * - Verify deterministic deployment consistency locally
  * - Accelerate development workflow for release pipeline changes
- * 
+ *
  * The tool provides detailed logging to help diagnose issues in the release
  * process and ensure all components work correctly together.
  */

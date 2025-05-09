@@ -25,11 +25,7 @@ import path from 'path'
 import fs from 'fs'
 import { promisify } from 'util'
 import { SemanticContext } from './sr-prepare'
-import {
-  PATHS,
-  ENV_VARS,
-  THRESHOLDS
-} from './constants'
+import { PATHS, ENV_VARS, THRESHOLDS } from './constants'
 import { Logger } from './helpers'
 
 /**
@@ -99,7 +95,11 @@ export async function verifyContracts(context: SemanticContext): Promise<void> {
     )
 
     // Set up environment for verification
-    const deployAllFile = path.join(cwd, PATHS.OUTPUT_DIR, PATHS.DEPLOYMENT_ALL_FILE)
+    const deployAllFile = path.join(
+      cwd,
+      PATHS.OUTPUT_DIR,
+      PATHS.DEPLOYMENT_ALL_FILE,
+    )
 
     // Check if verification data exists
     if (!fs.existsSync(deployAllFile)) {
@@ -172,31 +172,37 @@ async function executeVerification(
 
   // Pass verification keys directly as JSON string
   const verificationKeysJson = JSON.stringify(config.verificationKeys)
-  
+
   // Use promisify for cleaner async/await handling
-  
-  const execProcess = promisify((script: string, options: any, callback: (err: Error | null, code: number) => void) => {
-    const verifyProcess = spawn(script, [], options);
-    
-    verifyProcess.on('close', (code) => {
-      logger.log(`Verification process exited with code ${code}`);
-      
-      if (code !== 0) {
-        logger.error('Verification encountered some failures');
-      }
-      
-      // Always call back with success - we don't want to fail the release
-      callback(null, code || 0);
-    });
-    
-    verifyProcess.on('error', (error) => {
-      logger.error(
-        `Verification process failed to start: ${(error as Error).message}`,
-      );
-      callback(error, 1);
-    });
-  });
-  
+
+  const execProcess = promisify(
+    (
+      script: string,
+      options: any,
+      callback: (err: Error | null, code: number) => void,
+    ) => {
+      const verifyProcess = spawn(script, [], options)
+
+      verifyProcess.on('close', (code) => {
+        logger.log(`Verification process exited with code ${code}`)
+
+        if (code !== 0) {
+          logger.error('Verification encountered some failures')
+        }
+
+        // Always call back with success - we don't want to fail the release
+        callback(null, code || 0)
+      })
+
+      verifyProcess.on('error', (error) => {
+        logger.error(
+          `Verification process failed to start: ${(error as Error).message}`,
+        )
+        callback(error, 1)
+      })
+    },
+  )
+
   try {
     await execProcess(verifyScriptPath, {
       env: {
@@ -207,9 +213,9 @@ async function executeVerification(
       stdio: 'inherit',
       shell: true,
       cwd,
-    });
+    })
   } catch (error) {
     // Log the error but don't throw - we want to continue the release process
-    logger.error(`Verification process error: ${(error as Error).message}`);
+    logger.error(`Verification process error: ${(error as Error).message}`)
   }
 }

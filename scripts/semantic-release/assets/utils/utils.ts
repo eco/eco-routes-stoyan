@@ -38,7 +38,7 @@ export function extractAbiStruct<
  * @param params - The ABI or ABI fragment to search through
  * @param structName - The name of the struct to find in the ABI
  * @returns The found struct definition or undefined if not found
- * 
+ *
  * @internal This is an internal helper function used by extractAbiStruct
  */
 function extractAbiStructRecursive<
@@ -72,7 +72,7 @@ function extractAbiStructRecursive<
  *
  * @param structName - The name of the struct that could not be found
  * @returns Error object with descriptive message about the extraction failure
- * 
+ *
  * @internal This is an internal helper function used by extractAbiStruct
  */
 function ExtractAbiStructFailed(structName: string) {

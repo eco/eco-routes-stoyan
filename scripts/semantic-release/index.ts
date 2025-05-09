@@ -4,7 +4,7 @@
  * The main entry point and orchestrator for the eco-routes semantic-release plugin system.
  * This module exports all lifecycle hooks that integrate with semantic-release,
  * providing a complete automated release pipeline for smart contract projects.
- * 
+ *
  * The plugin implements a comprehensive workflow that handles everything from
  * version determination to contract deployment, verification, and package publishing.
  * It ensures that all deployment addresses are consistent across chains and properly
@@ -17,7 +17,7 @@
  * 4. version - Updates version information in Solidity files and package.json
  * 5. prepare - Builds, deploys contracts with deterministic addresses, verifies contracts
  * 6. publish - Publishes the packaged library to npm with proper versioning
- * 
+ *
  * This plugin architecture allows for separation of concerns while maintaining
  * a coordinated release process that handles both on-chain (smart contracts) and
  * off-chain (npm package) components of the protocol in a single automated flow.

@@ -4,7 +4,7 @@
  * Ensures all prerequisites are met before beginning the semantic release process.
  * As the first step in the release pipeline, this verification acts as a gatekeeper
  * to prevent attempted releases that would fail later in the process.
- * 
+ *
  * This module implements comprehensive validation of the environment, credentials,
  * package configuration, and deployment requirements before proceeding with any
  * further release steps. It provides early detection of potential issues and
@@ -18,7 +18,7 @@
  * - Git repository status and access rights
  * - Version compatibility with existing releases
  * - Deployment key and verification key availability
- * 
+ *
  * By validating all requirements upfront, this step prevents issues that would
  * otherwise be discovered later in the release process, after significant time
  * and resources have been invested.
@@ -38,7 +38,7 @@ dotenv.config()
 
 /**
  * Verifies all required conditions are met before a release can proceed.
- * 
+ *
  * This function implements the first step in the semantic-release lifecycle,
  * acting as a gatekeeper to prevent releases that would fail later in the process.
  * It performs comprehensive validation of the environment, credentials, and
@@ -55,7 +55,7 @@ dotenv.config()
  * @param context - Semantic release context with version, logger and environment info
  * @returns Promise that resolves when all conditions are verified successfully
  * @throws Error with detailed message if any verification check fails
- * 
+ *
  * @example
  * // This function is called by semantic-release automatically
  * // Usage in semantic-release configuration:

@@ -72,6 +72,7 @@ This script deploys the standard ERC-2470 Singleton Factory if not already deplo
 ```
 
 The script:
+
 - Checks if the factory exists at the standard address on each chain
 - Funds the dedicated factory deployer address if needed
 - Deploys the factory using a pre-signed transaction
@@ -87,6 +88,7 @@ This script deploys contracts across multiple chains:
 ```
 
 The script:
+
 - Loads chain data from the specified URL or local file
 - Deploys contracts on each chain using the `Deploy.s.sol` script
 - Saves deployment data to the specified results file
@@ -111,6 +113,7 @@ This script verifies all contracts deployed by MultiDeploy.sh on their respectiv
 ```
 
 The script:
+
 - Reads deployment data from RESULTS_FILE
 - Uses verification API keys from VERIFICATION_KEYS_FILE
 - Verifies each contract on the appropriate block explorer
@@ -123,13 +126,14 @@ Follow these steps for a complete deployment:
 
 1. Configure your `.env` file with all required environment variables
 2. Create a verification keys file (see `verification-keys-example.json`)
-3. Run `./scripts/deploySingletonFactory.sh` to ensure the Singleton Factory is deployed 
+3. Run `./scripts/deploySingletonFactory.sh` to ensure the Singleton Factory is deployed
 4. Run `./scripts/MultiDeploy.sh` to deploy all contracts across chains
 5. Run `./scripts/VerifyResults.sh` to verify the deployed contracts
 
 ## Chain Data JSON Format
 
 The CHAIN_DATA_URL can point to either:
+
 - A remote HTTP URL: `https://raw.githubusercontent.com/eco/eco-chains/refs/heads/main/src/assets/chain.json`
 - A local file path: `/path/to/local/chains.json`
 
@@ -150,6 +154,7 @@ The JSON file should have the following structure:
 ```
 
 Each entry contains:
+
 - Chain ID as the key
 - `url`: RPC endpoint (with optional environment variable substitution)
 - `mailbox`: Address of the Mailbox contract on this chain (if applicable)
@@ -178,6 +183,7 @@ The VERIFICATION_KEYS_FILE should contain a JSON object with chain IDs as keys a
 ```
 
 Each chain requires its own specific API key for the relevant block explorer:
+
 - Chain ID 1: Etherscan API key
 - Chain ID 10: Optimism Explorer API key
 - Chain ID 56: BscScan API key

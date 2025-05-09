@@ -2,20 +2,20 @@ import path from 'path'
 
 /**
  * @file constants.ts
- * 
+ *
  * Central configuration for all semantic-release scripts and deployment processes.
- * 
+ *
  * This file serves as the single source of truth for paths, environment variable names,
  * and other constants used throughout the release process. By centralizing these values,
  * we ensure consistency across different scripts and make maintenance simpler.
- * 
+ *
  * The constants include:
  * - File paths for build artifacts and deployment results
  * - Environment variable names for configuration
  * - Required environment variables for different operations
  * - Package naming conventions
  * - Performance thresholds and limits
- * 
+ *
  * These constants are used by the deployment, verification, and packaging scripts
  * to locate files, validate configurations, and ensure consistent behavior.
  */
@@ -36,8 +36,9 @@ export const PATHS = {
   VERIFICATION_SCRIPT: 'scripts/verifyRoutes.sh',
   VERIFICATION_KEYS_FILE: 'verification-keys.json',
 
-  //Chains
-  DEFAULT_CHAIN_DATA_URL : "https://raw.githubusercontent.com/eco/eco-chains/refs/heads/main/src/assets/chain.json",
+  // Chains
+  DEFAULT_CHAIN_DATA_URL:
+    'https://raw.githubusercontent.com/eco/eco-chains/refs/heads/main/src/assets/chain.json',
 
   // Package related
   PACKAGE_JSON: 'package.json',
@@ -102,7 +103,7 @@ export const THRESHOLDS = {
  * @param cwd - Current working directory as the base path
  * @param relativePath - Relative path to resolve against the base path
  * @returns Absolute path with normalized directory separators
- * 
+ *
  * @example
  * // Get absolute path to the build directory
  * const buildDir = getAbsolutePath('/project/root', 'build');
@@ -115,14 +116,14 @@ export function getAbsolutePath(cwd: string, relativePath: string): string {
 /**
  * Retrieves the absolute path to the deployment results CSV file, which contains
  * records of all contracts deployed during the current release process.
- * 
+ *
  * This file is critical for tracking deployment results across multiple chains
  * and environments, and is used for verification, client library generation,
  * and deployment auditing.
  *
  * @param cwd - Current working directory as the base path
  * @returns Absolute path to the deployment results CSV file
- * 
+ *
  * @example
  * // Get path to deployment results file
  * const resultsPath = getDeploymentResultsPath('/project/root');
@@ -138,14 +139,14 @@ export function getDeploymentResultsPath(cwd: string): string {
 /**
  * Retrieves the absolute path to the deployAddresses.json file, which is the primary
  * artifact containing all deployed contract addresses organized by chain ID and environment.
- * 
+ *
  * This JSON file is included in the published npm package and used by client libraries
  * to locate the correct contract addresses for each chain and environment. It serves
  * as the single source of truth for contract addresses across the protocol's deployment.
  *
  * @param cwd - Current working directory as the base path
  * @returns Absolute path to the deployed addresses JSON file
- * 
+ *
  * @example
  * // Get path to deployed addresses JSON file
  * const addressesPath = getDeployedAddressesJsonPath('/project/root');
@@ -158,14 +159,14 @@ export function getDeployedAddressesJsonPath(cwd: string): string {
 /**
  * Retrieves the absolute path to the build directory, which contains all compiled
  * artifacts, deployment results, and package files prepared for publication.
- * 
+ *
  * The build directory is a temporary workspace created during the release process
  * where all artifacts are collected, organized, and prepared before being published
  * to npm. This includes contract ABIs, addresses, TypeScript definitions, and more.
  *
  * @param cwd - Current working directory as the base path
  * @returns Absolute path to the build directory
- * 
+ *
  * @example
  * // Get path to build directory
  * const buildDir = getBuildDirPath('/project/root');

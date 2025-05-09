@@ -16,9 +16,9 @@ jest.mock('child_process', () => ({
           handler(0) // Simulate successful completion
         }
         return { on: jest.fn() }
-      })
+      }),
     }
-  })
+  }),
 }))
 
 // Mock fs
@@ -74,14 +74,14 @@ describe('sr-publish', () => {
         version: '1.0.0',
         gitTag: 'v1.0.0',
         notes: 'Test release notes',
-        type: 'minor'
+        type: 'minor',
       },
       logger: {
         log: jest.fn(),
         error: jest.fn(),
-        warn: jest.fn()
+        warn: jest.fn(),
       },
-      cwd: '/test/path'
+      cwd: '/test/path',
     }
 
     pluginConfig = {}
@@ -101,14 +101,16 @@ describe('sr-publish', () => {
       await publish(pluginConfig, context)
 
       // Should call setPublishingPackage for both packages
-      expect(buildPackageModule.setPublishingPackage).toHaveBeenCalledTimes(Object.keys(PACKAGE).length)
-      expect(buildPackageModule.setPublishingPackage).toHaveBeenCalledWith(
-        context,
-        PACKAGE.ROUTES_PACKAGE_NAME
+      expect(buildPackageModule.setPublishingPackage).toHaveBeenCalledTimes(
+        Object.keys(PACKAGE).length,
       )
       expect(buildPackageModule.setPublishingPackage).toHaveBeenCalledWith(
         context,
-        PACKAGE.ROUTES_TS_PACKAGE_NAME
+        PACKAGE.ROUTES_PACKAGE_NAME,
+      )
+      expect(buildPackageModule.setPublishingPackage).toHaveBeenCalledWith(
+        context,
+        PACKAGE.ROUTES_TS_PACKAGE_NAME,
       )
 
       // Should execute yarn publish
@@ -116,17 +118,17 @@ describe('sr-publish', () => {
       expect(exec).toHaveBeenCalledWith(
         'yarn publish --tag latest',
         expect.objectContaining({
-          cwd: '/test/build/path'
+          cwd: '/test/build/path',
         }),
-        expect.any(Function)
+        expect.any(Function),
       )
 
       // Should log successful publish
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes@1.0.0 published successfully'
+        'Package @eco-foundation/eco-routes@1.0.0 published successfully',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes-ts@1.0.0 published successfully'
+        'Package @eco-foundation/eco-routes-ts@1.0.0 published successfully',
       )
     })
 
@@ -145,13 +147,13 @@ describe('sr-publish', () => {
 
       // Should log dry run messages
       expect(context.logger.log).toHaveBeenCalledWith(
-        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.'
+        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'DRY RUN: Not really publishing: @eco-foundation/eco-routes@1.0.0'
+        'DRY RUN: Not really publishing: @eco-foundation/eco-routes@1.0.0',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes@1.0.0 would be published successfully'
+        'Package @eco-foundation/eco-routes@1.0.0 would be published successfully',
       )
     })
 
@@ -165,8 +167,8 @@ describe('sr-publish', () => {
         nextRelease: {
           ...context.nextRelease!,
           type: 'prerelease',
-          version: '1.0.0-beta.1'
-        }
+          version: '1.0.0-beta.1',
+        },
       }
 
       await publish(pluginConfig, prereleaseContext)
@@ -176,23 +178,27 @@ describe('sr-publish', () => {
       expect(exec).toHaveBeenCalledWith(
         'yarn publish --tag beta',
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
       )
     })
 
     it('should throw and log error if publishing fails', async () => {
       // Set environment to trigger actual publishing
-      process.env[ENV_VARS.CI] = 'true';
+      process.env[ENV_VARS.CI] = 'true'
 
       // Mock exec to fail
-      (exec as any as jest.Mock).mockImplementationOnce(() => {
+      ;(exec as any as jest.Mock).mockImplementationOnce(() => {
         throw new Error('Publish failed')
       })
 
-      await expect(publish(pluginConfig, context)).rejects.toThrow('Publish failed')
+      await expect(publish(pluginConfig, context)).rejects.toThrow(
+        'Publish failed',
+      )
 
       // Should log error
-      expect(context.logger.error).toHaveBeenCalledWith('❌ Package publish failed')
+      expect(context.logger.error).toHaveBeenCalledWith(
+        '❌ Package publish failed',
+      )
       expect(context.logger.error).toHaveBeenCalledWith('Publish failed')
     })
 
@@ -205,7 +211,7 @@ describe('sr-publish', () => {
       fs.existsSync.mockReturnValueOnce(false)
 
       await expect(publish(pluginConfig, context)).rejects.toThrow(
-        'Compilation failed: dist directory not found at'
+        'Compilation failed: dist directory not found at',
       )
     })
   })
@@ -219,7 +225,7 @@ describe('sr-publish', () => {
 
       // Check that we're not in dry run mode
       expect(context.logger.log).not.toHaveBeenCalledWith(
-        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.'
+        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
     })
 
@@ -231,7 +237,7 @@ describe('sr-publish', () => {
 
       // Check that we're not in dry run mode
       expect(context.logger.log).not.toHaveBeenCalledWith(
-        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.'
+        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
     })
 
@@ -243,7 +249,7 @@ describe('sr-publish', () => {
 
       // Check that we are in dry run mode
       expect(context.logger.log).toHaveBeenCalledWith(
-        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.'
+        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
     })
 
@@ -260,16 +266,16 @@ describe('sr-publish', () => {
 
       // Check console logs
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.'
+        'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Would publish: @eco-foundation/eco-routes@2.0.0'
+        'Would publish: @eco-foundation/eco-routes@2.0.0',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Would publish: @eco-foundation/eco-routes-ts@2.0.0'
+        'Would publish: @eco-foundation/eco-routes-ts@2.0.0',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Not publishing. Set')
+        expect.stringContaining('Not publishing. Set'),
       )
     })
   })

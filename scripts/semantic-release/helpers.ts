@@ -2,12 +2,12 @@
  * @file helpers.ts
  *
  * Provides utility functions and shared helpers for the semantic-release workflow.
- * 
+ *
  * This module contains common functionality used across different semantic-release
  * lifecycle events, including version handling, logging, package management,
  * and file operations. These utilities ensure consistent behavior and reduce
  * code duplication throughout the release process.
- * 
+ *
  * Key features:
  * - Standardized logging interface matching semantic-release conventions
  * - Version comparison and manipulation utilities
@@ -38,7 +38,7 @@ export interface Logger {
  * @param version - Current version being released in semver format
  * @param logger - Logger instance for output messages
  * @returns Object containing the published version and a flag indicating if current version is newer, or null if no published version exists
- * 
+ *
  * @example
  * // Get latest version info for 'eco-routes' with version '1.2.3'
  * const versionInfo = await fetchLatestPackageVersion('eco-routes', '1.2.3', logger);
@@ -108,7 +108,7 @@ export async function fetchLatestPackageVersion(
  *
  * @param dir - Absolute path to the directory to list files from
  * @returns Array of file paths relative to the provided directory
- * 
+ *
  * @example
  * // Get all files in the contracts directory
  * const files = listFilesRecursively('/path/to/contracts');
@@ -142,7 +142,7 @@ export function listFilesRecursively(dir: string): string[] {
  *
  * @param version - Version string to validate (e.g., '1.2.3' or '1.2.3-beta.1')
  * @returns Boolean indicating whether the version is valid according to semver rules
- * 
+ *
  * @example
  * // Check if a version string is valid
  * if (!isValidVersion('1.2.x')) {
@@ -159,7 +159,7 @@ export function isValidVersion(version: string): boolean {
  *
  * @param directoryPath - Path to the directory containing package.json
  * @returns Parsed package.json content as a JavaScript object
- * 
+ *
  * @example
  * // Get package information from the current directory
  * const packageInfo = getPackageInfo('/path/to/project');

@@ -42,10 +42,12 @@ The semantic-release process is integrated with GitHub Actions in the repository
 ### GitHub Actions Workflow
 
 The workflow is defined in `.github/workflows/release.yml` and runs when:
+
 - A PR is merged to the main branch
 - The workflow is manually triggered
 
 Required GitHub repository secrets:
+
 - `NPM_TOKEN`: For publishing to npm
 - `PRIVATE_KEY`: Deployer wallet private key
 - `ALCHEMY_API_KEY`: Used for contract deployment and verification
@@ -58,6 +60,7 @@ You can test the semantic-release process locally without actually publishing or
 ### Setup
 
 1. Create a `.env` file in the project root with the following variables:
+
    ```
    PRIVATE_KEY=your_private_key
    ALCHEMY_API_KEY=your_alchemy_api_key
@@ -74,6 +77,7 @@ yarn semantic:pub
 ```
 
 To actually publish during local testing (USE WITH CAUTION):
+
 ```bash
 NOT_DRY_RUN=true yarn semantic:pub
 ```
@@ -125,6 +129,7 @@ The system uses deterministic deployment with CREATE2/CREATE3 to ensure that con
 ### Salt Generation and Addressing
 
 The salt is derived from the package version, providing several benefits:
+
 - Production and pre-production contracts have different but predictable addresses
 - Patch versions maintain the same contract addresses as their minor versions (e.g., 1.2.0, 1.2.1, and 1.2.2 all deploy to the same addresses)
 - Contract addresses are consistent across all EVM-compatible chains
@@ -132,25 +137,29 @@ The salt is derived from the package version, providing several benefits:
 ### Deployment Process in Detail
 
 1. **Salt Computation**:
+
    ```typescript
    // For production
    const rootSalt = keccak256(toHex(`${major}.${minor}`))
-   
+
    // For pre-production
    const preprodRootSalt = keccak256(toHex(`${major}.${minor}-preprod`))
    ```
 
 2. **Bytecode Generation and Constructor Arguments**:
+
    - The system generates deployment bytecode with properly encoded constructor arguments
    - This bytecode is combined with the salt to predict contract addresses
    - The `gen-bytecode.ts` script handles creation of all necessary deployment data
 
 3. **Contract Deployment Execution**:
+
    - The `deploy.sh` script is called with the appropriate environment variables
    - It uses CREATE2/CREATE3 factory contracts to deploy with deterministic addresses
    - Results are stored in CSV format with headers: `Environment,ChainID,[Contract Names...]`
 
 4. **Chain ID Determination**:
+
    - Chain IDs are fetched from a remote configuration URL using fetch API
    - This allows easy addition of new chains without code changes
    - The system falls back to environment variables if the fetch fails
@@ -172,25 +181,30 @@ Example of deterministic deployment transaction:
 
 ```solidity
 // Inside Deploy.s.sol
-function createDeterministicAddress(bytes32 salt, bytes memory bytecode) internal returns (address) {
-    bytes memory deploymentData = abi.encodePacked(
-        bytes1(0xff),
-        CREATE2_DEPLOYER_ADDRESS,
-        salt,
-        keccak256(bytecode)
-    );
-    return address(uint160(uint256(keccak256(deploymentData))));
+function createDeterministicAddress(
+  bytes32 salt,
+  bytes memory bytecode
+) internal returns (address) {
+  bytes memory deploymentData = abi.encodePacked(
+    bytes1(0xff),
+    CREATE2_DEPLOYER_ADDRESS,
+    salt,
+    keccak256(bytecode)
+  );
+  return address(uint160(uint256(keccak256(deploymentData))));
 }
 ```
 
 ## Version Control
 
 The system follows semantic versioning principles:
+
 - **Major**: Breaking changes
 - **Minor**: New features, non-breaking changes
 - **Patch**: Bug fixes and minor improvements
 
 When a new version is released:
+
 1. Contract versions are updated in Solidity files
 2. Package.json is updated with the new version
 3. Contract addresses are included in the published package
@@ -199,25 +213,30 @@ When a new version is released:
 
 ### Common Issues
 
-1. **Missing environment variables**: 
+1. **Missing environment variables**:
+
    - Ensure all required environment variables are set
    - Check for spaces in JSON-formatted environment variables like VERIFICATION_KEYS
 
-2. **Authentication errors**: 
+2. **Authentication errors**:
+
    - Make sure your NPM_TOKEN is valid and has publish rights
    - For verification issues, verify your block explorer API keys are valid
 
 3. **Deployment failures**:
+
    - Check network connectivity and gas prices
    - Ensure your deployer account has sufficient funds on all target chains
    - Verify the bytecode deployment file was generated correctly
 
 4. **Verification failures**:
+
    - Block explorers may have rate limits - check the response codes
    - Ensure constructor arguments are properly encoded
    - Some networks might have delays before verification is possible
 
 5. **Address mismatch issues**:
+
    - If addresses don't match expectations, check the salt calculation
    - Confirm bytecode is identical (no subtle changes in contracts)
    - Verify the CREATE2/CREATE3 factory address is correct for the network
@@ -229,16 +248,19 @@ When a new version is released:
 ### Debugging
 
 For more detailed logs during local testing:
+
 ```bash
 DEBUG=true yarn semantic:local
 ```
 
 To inspect the deployment bytecode before deploying:
+
 ```bash
 cat build/bytecode_deployment.json | jq
 ```
 
 To validate verification data before submitting:
+
 ```bash
 cat out/verify-data.txt
 ```
@@ -278,10 +300,15 @@ The npm packages provide the following features to developers:
 ### Usage Example
 
 ```typescript
-import { EcoProtocolAddresses, IntentSourceAbi, encodeIntent, hashIntent } from '@eco-foundation/eco-routes';
+import {
+  EcoProtocolAddresses,
+  IntentSourceAbi,
+  encodeIntent,
+  hashIntent,
+} from "@eco-foundation/eco-routes"
 
 // Get IntentSource address for Optimism (chain ID 10)
-const intentSourceAddress = EcoProtocolAddresses['10'].IntentSource;
+const intentSourceAddress = EcoProtocolAddresses["10"].IntentSource
 
 // Create and hash an intent
 const intent = {
@@ -290,11 +317,11 @@ const intent = {
   },
   reward: {
     // Reward parameters
-  }
-};
+  },
+}
 
-const { intentHash } = hashIntent(intent);
-const encodedIntent = encodeIntent(intent);
+const { intentHash } = hashIntent(intent)
+const encodedIntent = encodeIntent(intent)
 ```
 
 ## References

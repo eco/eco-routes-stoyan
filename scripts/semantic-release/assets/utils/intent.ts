@@ -117,7 +117,7 @@ export type RewardType = IntentType['reward']
  *
  * @param route - The route object following the RouteType structure defined by the contract
  * @returns Hex-encoded ABI-encoded representation of the route
- * 
+ *
  * @example
  * // Encode a route for an intent
  * const encodedRoute = encodeRoute({
@@ -143,7 +143,7 @@ export function encodeRoute(route: RouteType) {
  *
  * @param route - Hex-encoded ABI representation of a route structure
  * @returns Decoded RouteType object with all route parameters in their proper types
- * 
+ *
  * @example
  * // Decode an encoded route back to a route object
  * const route = decodeRoute('0x...');
@@ -163,7 +163,7 @@ export function decodeRoute(route: Hex): RouteType {
  *
  * @param reward - The reward object following the RewardType structure defined by the contract
  * @returns Hex-encoded ABI-encoded representation of the reward
- * 
+ *
  * @example
  * // Encode a reward specification for an intent
  * const encodedReward = encodeReward({
@@ -187,7 +187,7 @@ export function encodeReward(reward: RewardType) {
  *
  * @param reward - Hex-encoded ABI representation of a reward structure
  * @returns Decoded RewardType object with all reward parameters in their proper types
- * 
+ *
  * @example
  * // Decode an encoded reward back to a reward object
  * const reward = decodeReward('0x...');
@@ -207,7 +207,7 @@ export function decodeReward(reward: Hex): RewardType {
  *
  * @param intent - The intent object containing both route and reward structures
  * @returns Hex-encoded packed representation of the complete intent
- * 
+ *
  * @example
  * // Encode a complete intent with route and reward
  * const encodedIntent = encodeIntent({
@@ -226,7 +226,7 @@ export function encodeIntent(intent: IntentType) {
  *
  * @param intent - Hex-encoded packed representation of a complete intent
  * @returns Decoded IntentType object with nested route and reward structures
- * 
+ *
  * @example
  * // Decode an encoded intent back to an intent object
  * const intent = decodeIntent('0x...');
@@ -246,7 +246,7 @@ export function decodeIntent(intent: Hex): IntentType {
  *
  * @param route - The route object to hash, following the RouteType structure
  * @returns Hex-encoded keccak256 hash of the encoded route
- * 
+ *
  * @example
  * // Hash a route for verification
  * const routeHash = hashRoute({
@@ -266,7 +266,7 @@ export function hashRoute(route: RouteType): Hex {
  *
  * @param reward - The reward object to hash, following the RewardType structure
  * @returns Hex-encoded keccak256 hash of the encoded reward
- * 
+ *
  * @example
  * // Hash a reward for verification
  * const rewardHash = hashReward({
@@ -289,7 +289,7 @@ export function hashReward(reward: RewardType): Hex {
  *
  * @param intent - The complete intent object containing both route and reward structures
  * @returns Object containing the routeHash, rewardHash, and the combined intentHash
- * 
+ *
  * @example
  * // Generate all hashes for an intent
  * const hashes = hashIntent({

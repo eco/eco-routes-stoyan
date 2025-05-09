@@ -4,7 +4,7 @@
  * Specialized utilities for managing version information in Solidity smart contracts.
  * This module handles the complex task of updating version identifiers in contract source
  * code to maintain consistency between semantic versions and on-chain version reporting.
- * 
+ *
  * The version management system implements standardized version interfaces for smart
  * contracts, ensuring that deployed contracts can accurately report their version
  * via on-chain queries. This is essential for protocol governance, security auditing,
@@ -18,7 +18,7 @@
  * - Synchronizes version information between package.json and Solidity files
  * - Handles complex regex patterns for reliable version string replacement
  * - Preserves Solidity file structure and formatting during updates
- * 
+ *
  * These utilities ensure that all deployed contracts implement standardized versioning
  * interfaces and report accurate version information that correlates with the package
  * version and Git commit history.
@@ -36,7 +36,7 @@ import { getBaseVersion } from '../utils/extract-salt'
  * in version strings for traceability between source code and deployed contracts.
  *
  * @returns Short git hash string (typically 7 characters) of the current HEAD commit
- * 
+ *
  * @example
  * // Get current git commit hash for version string
  * const gitHash = getGitHashShort(); // "abc1234"
@@ -59,9 +59,9 @@ export function getGitHashShort(): string {
  * @param version - Semantic version string to set in Solidity files
  * @param logger - Logger instance for output messages and errors
  * @returns Number of Solidity files that were successfully updated
- * 
+ *
  * @throws Will throw an error if file operations fail or if directory traversal fails
- * 
+ *
  * @example
  * // Update all Solidity contract versions to 1.2.3
  * const updatedCount = updateSolidityVersions('/project/root', '1.2.3', logger);
@@ -75,7 +75,9 @@ export function updateSolidityVersions(
   const contractsDir = path.join(cwd, 'contracts')
   let updatedCount = 0
   const baseVersion = getBaseVersion(version, logger)
-  logger.log(`Updating Solidity files to base version ${baseVersion} from whole version ${version}-${getGitHashShort()}`)
+  logger.log(
+    `Updating Solidity files to base version ${baseVersion} from whole version ${version}-${getGitHashShort()}`,
+  )
 
   // Recursive function to traverse directories and update .sol files
   function updateDirectory(dir: string): void {
@@ -142,9 +144,9 @@ export function updateSolidityVersions(
  * @param version - Semantic version string to set in package.json
  * @param logger - Logger instance for output messages and errors
  * @returns void
- * 
+ *
  * @throws Will throw an error if the package.json file cannot be read or written
- * 
+ *
  * @example
  * // Update package.json version to 1.2.3
  * updatePackageJsonVersion('/project/root', '1.2.3', logger);

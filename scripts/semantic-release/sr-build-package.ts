@@ -4,7 +4,7 @@
  * Manages the build process for the eco-routes npm package, transforming
  * compiled contracts and deployment information into a structured package
  * that can be consumed by client applications.
- * 
+ *
  * This process includes:
  * 1. Collecting and processing Solidity ABIs from contract artifacts
  * 2. Creating type-safe TypeScript interfaces for contract interaction
@@ -13,7 +13,7 @@
  * 5. Setting up package.json with appropriate metadata and dependencies
  * 6. Integrating documentation and type definitions for developer experience
  * 7. Compiling and packaging TypeScript code for distribution
- * 
+ *
  * The resulting npm package enables developers to easily interact with the protocol's
  * deployed contracts with full type safety, consistent addressing across chains,
  * and proper versioning that matches the deployed contract implementations.
@@ -33,7 +33,12 @@ import { determineSalts } from '../utils/extract-salt'
 
 // Define the contract types that form our chain configuration
 // This is used for both CSV headers and TypeScript type definitions
-export const CONTRACT_TYPES = ['IntentSource', 'Inbox', 'HyperProver', 'MetaProver'] as const
+export const CONTRACT_TYPES = [
+  'IntentSource',
+  'Inbox',
+  'HyperProver',
+  'MetaProver',
+] as const
 
 const execPromise = promisify(exec)
 
@@ -75,7 +80,7 @@ interface AbiFile {
  *
  * @param context - The semantic release context containing version and logging info
  * @returns Promise that resolves when the package build is complete
- * 
+ *
  * @throws Will throw an error if any part of the build process fails
  */
 export async function buildPackage(context: SemanticContext): Promise<void> {
@@ -202,7 +207,7 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
  *
  * @param buildDir - The directory where build artifacts and generated files should be placed
  * @param logger - The logger instance to use for output messages and errors
- * 
+ *
  * @example
  * // Generate TypeScript files from ABIs in the build directory
  * generateAbiTypeScriptFiles('/path/to/build', logger);
@@ -298,7 +303,7 @@ function generateAbiTypeScriptFiles(buildDir: string, logger: Logger): void {
  * @param addresses - Object containing chain IDs and contract addresses mapping
  * @param buildDir - Directory to store the output CSV file
  * @param logger - The logger instance for output messages and errors
- * 
+ *
  * @example
  * // Generate CSV from deployment addresses
  * generateCsvFile(deployedAddresses, '/path/to/build', logger);
@@ -353,7 +358,7 @@ function generateCsvFile(
  * @param buildDir - Directory to store the generated index.ts file
  * @param version - Package version number to embed in the file for reference
  * @param logger - The logger instance for output messages and errors
- * 
+ *
  * @example
  * // Generate main index.ts file with contract addresses
  * generateIndexFile(addresses, '/path/to/build', '1.2.3', logger);
@@ -400,7 +405,7 @@ export type EcoChainIdsEnv = keyof typeof EcoProtocolAddresses
 /**
  * The chain ids of the eco protocol, exluding the different environments. 
  */
-export type EcoChainIds = Exclude<EcoChainIdsEnv, ${"`${number}`"}> extends ${"`${infer N extends number}`"} ? N : never;
+export type EcoChainIds = Exclude<EcoChainIdsEnv, ${'`${number}`'}> extends ${'`${infer N extends number}`'} ? N : never;
 export type ContractName<T extends EcoChainIdsEnv> = keyof typeof EcoProtocolAddresses[T];
 
 /**
@@ -479,7 +484,7 @@ function copyOtherPackageFiles(
  * Creates a tsconfig.json file for TypeScript compilation of the package.
  * Sets up the TypeScript compiler configuration for the npm package
  * with the right target settings, module type, and output directory.
- * 
+ *
  * This configuration ensures the package is built with the correct settings for
  * compatibility with various JavaScript environments and includes:
  * - ES2020 target for modern JavaScript features
@@ -490,7 +495,7 @@ function copyOtherPackageFiles(
  *
  * @param buildDir - Directory where the tsconfig.json file should be created
  * @param logger - The logger instance for output messages and errors
- * 
+ *
  * @example
  * // Create tsconfig.json in the build directory
  * createTsConfig('/path/to/build', logger);
@@ -523,25 +528,25 @@ function createTsConfig(buildDir: string, logger: Logger): void {
 /**
  * Prepares the package.json for publishing by modifying it with the correct metadata
  * for the specified package type (either main package or TypeScript-only package).
- * 
+ *
  * This function customizes the package.json with appropriate fields including:
  * - Package name (either eco-routes or eco-routes-ts)
  * - Current version from semantic release
  * - Module entry points and type definitions
  * - Files to include in the published package
  * - Dependency specifications
- * 
+ *
  * The function maintains different configurations for the main package (with Solidity files)
  * and the TypeScript-only package for different use cases.
  *
  * @param context - Semantic release context with version and logging information
  * @param pubLib - Package identifier from PACKAGE constants defining which variant to build
  * @returns Promise that resolves when package.json has been updated
- * 
+ *
  * @example
  * // Set up the main package with full Solidity files
  * await setPublishingPackage(context, PACKAGE.ROUTES_PACKAGE_NAME);
- * 
+ *
  * // Set up the TypeScript-only package
  * await setPublishingPackage(context, PACKAGE.ROUTES_TS_PACKAGE_NAME);
  */

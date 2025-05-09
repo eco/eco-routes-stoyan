@@ -4,7 +4,7 @@
  * Manages the final publishing step in the semantic-release process, handling the
  * distribution of built packages to npm and other registries. This is the culmination
  * of the entire release pipeline, making the new version publicly available.
- * 
+ *
  * This module implements strict publishing controls and verification to ensure
  * only properly built, tested, and authorized packages are published to registries.
  * It includes safety mechanisms to prevent accidental publishing from development
@@ -18,7 +18,7 @@
  * - Registry authentication and publishing authorization
  * - Detailed logging and feedback on publish status
  * - Publication metadata generation for semantic-release tracking
- * 
+ *
  * The publish step integrates with CI/CD pipelines and handles environment-specific
  * authentication, ensuring secure credential management during the publishing process.
  */
@@ -37,14 +37,14 @@ const execPromise = promisify(exec)
 
 /**
  * Publishes both packages to npm: the main package with Solidity files and the TypeScript-only package.
- * 
+ *
  * This function implements the final step in the semantic-release lifecycle,
  * publishing the built packages to npm with appropriate version tags. It handles
  * both the main eco-routes package (containing Solidity files) and the TypeScript-only
  * package for clients that don't need the Solidity source.
- * 
+ *
  * The publishing process includes:
- * 1. Determining appropriate npm tag based on version type (latest, beta, etc.)  
+ * 1. Determining appropriate npm tag based on version type (latest, beta, etc.)
  * 2. Configuring package.json for each package type before publishing
  * 3. Verifying the package build is complete and correct
  * 4. Publishing packages with proper authentication
@@ -53,7 +53,7 @@ const execPromise = promisify(exec)
  * @param pluginConfig - Plugin configuration options from semantic-release
  * @param context - The semantic release context with version and logging information
  * @returns Object containing published package names and their registry URLs
- * 
+ *
  * @throws Will throw an error if publishing fails for any reason
  */
 export async function publish(
@@ -61,22 +61,22 @@ export async function publish(
   context: SemanticContext,
 ): Promise<any> {
   const { nextRelease, logger, cwd } = context
-  
+
   // Use the custom RELEASE_VERSION environment variable if available
   const environmentVersion = process.env.RELEASE_VERSION
   let version = nextRelease?.version || ''
-  
+
   // Update the version if using a custom one
   if (environmentVersion) {
     version = environmentVersion
     logger.log(`Using custom version from environment: ${version}`)
-    
+
     // Update nextRelease if it exists
     if (nextRelease) {
       nextRelease.version = version
     }
   }
-  
+
   const dryRun = !shouldWePublish(version)
   if (dryRun) {
     logger.log(
@@ -88,7 +88,7 @@ export async function publish(
     // Determine the tag to use for publishing
     // Use 'latest' for stable releases, 'beta' for prerelease versions
     const cleanVersion = version.split('-')
-    const tag = cleanVersion.length > 1  ? cleanVersion[1] : 'latest'
+    const tag = cleanVersion.length > 1 ? cleanVersion[1] : 'latest'
 
     logger.log(`Publishing packages version ${version} with tag ${tag}`)
 
@@ -136,7 +136,7 @@ export async function publish(
 
 /**
  * Determines whether packages should be published based on environment variables.
- * 
+ *
  * This function implements safety checks to prevent accidental publishing from
  * development environments. It requires explicit confirmation via environment
  * variables to proceed with actual publishing, otherwise defaults to dry-run mode.
@@ -149,7 +149,7 @@ export async function publish(
  *
  * @param version - The version string being published for logging purposes
  * @returns Boolean indicating whether to proceed with actual publishing (true) or dry-run mode (false)
- * 
+ *
  * @example
  * // Check if we should publish the packages or just simulate
  * const shouldPublish = shouldWePublish('1.2.3');

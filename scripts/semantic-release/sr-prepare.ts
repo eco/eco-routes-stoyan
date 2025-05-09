@@ -4,7 +4,7 @@
  * Orchestrates the preparation phase of semantic releases for smart contract projects.
  * This critical step runs after version determination but before package publication,
  * handling the building, deployment, and verification of contracts across all networks.
- * 
+ *
  * The prepare phase is responsible for:
  * 1. Ensuring all build dependencies are installed
  * 2. Compiling and optimizing smart contracts with Foundry
@@ -12,12 +12,12 @@
  * 4. Verifying deployed contract source code on block explorers
  * 5. Generating deployment artifacts for client libraries
  * 6. Building the TypeScript package with correct version information
- * 
+ *
  * This script coordinates with other semantic release plugins to ensure
- * consistent versioning across the entire release pipeline, processing both 
+ * consistent versioning across the entire release pipeline, processing both
  * mainnet and pre-production environments with appropriate salt derivation
  * to guarantee deterministic cross-chain addresses.
- * 
+ *
  * The prepare step is crucial as it creates the deploymentAddresses.json file
  * that gets bundled with the published package, enabling clients to interact
  * with the deployed contracts without hardcoding addresses.
@@ -60,7 +60,7 @@ export interface SemanticContext {
 /**
  * Orchestrates the preparation phase of the semantic-release process, handling
  * the building, deployment, and verification of smart contracts across all supported chains.
- * 
+ *
  * This critical step runs after version determination but before package publication,
  * ensuring that contracts are deployed with deterministic addresses using version-derived salts.
  * For patch versions, it reuses the same salt to maintain address consistency.
@@ -86,11 +86,11 @@ export async function prepare(
     logger.log('No release detected, skipping contract deployment')
     return
   }
-  
+
   // Use the custom RELEASE_VERSION environment variable if available
   const environmentVersion = process.env.RELEASE_VERSION
   const version = environmentVersion || nextRelease.version
-  
+
   // Update the nextRelease object to use our custom version
   if (environmentVersion) {
     nextRelease.version = environmentVersion
@@ -106,7 +106,7 @@ export async function prepare(
   const packageName = packageJson.name
 
   // 1. Build the hardhat and forge files
-  await buildProject() 
+  await buildProject()
 
   // 2. Deploy EIP-2470 factory if it doesn't exist
   logger.log(`Deploying EIP-2470 factory if it doesn't exist:`)
@@ -131,13 +131,13 @@ export async function prepare(
 /**
  * Builds all project artifacts needed for deployment, cleaning previous builds
  * and compiling contracts with both Hardhat and Foundry.
- * 
+ *
  * This function executes a sequence of build steps to ensure all contract artifacts
  * are properly generated before deployment:
  * 1. Cleans previous build artifacts
  * 2. Runs TypeScript/Hardhat build in production mode
  * 3. Compiles contracts using Foundry/Forge
- * 
+ *
  * @returns Promise that resolves when the build process completes
  */
 async function buildProject() {

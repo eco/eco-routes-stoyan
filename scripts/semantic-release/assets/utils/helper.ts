@@ -16,7 +16,7 @@ import { encodeFunctionData, erc20Abi, Hex } from 'viem'
  * @param to - The recipient address to send tokens to (must be a valid Ethereum address)
  * @param value - The amount of tokens to send (in the token's smallest unit, usually wei)
  * @returns Hex-encoded function call data ready for a transaction or intent
- * 
+ *
  * @example
  * // Encode a transfer of 1000 tokens to 0x123...
  * const calldata = encodeERC20Transfer("0x123...", BigInt(1000));

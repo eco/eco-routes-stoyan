@@ -1,17 +1,17 @@
 /**
  * @file gen-bytecode.ts
- * 
+ *
  * Handles generation of deployment bytecode and initialization data for deterministic
  * contract deployment across chains. This utility prepares the exact bytecode that
  * will be deployed using CREATE2/CREATE3 deployers with specific salts.
- * 
+ *
  * The module handles:
  * - Generation of correctly formatted initialization bytecode
  * - Computation of constructor argument encoding
  * - Preparation of deployment data for verification tools
  * - Environment-specific salt processing for deterministic addresses
  * - Creation of bytecode artifacts for multi-chain deployment
- * 
+ *
  * This process is critical for ensuring that contracts deploy to the same addresses
  * across all chains when using the same salt, a key requirement for cross-chain
  * protocols that need consistent addressing.
@@ -30,7 +30,6 @@ import {
 import fs from 'fs'
 import path from 'path'
 import { PATHS } from './constants'
-
 
 type FetchData = {
   [chainId: string]: {
@@ -63,7 +62,11 @@ const CREATE_X_DEPLOYER_ADDRESS = '0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
 
 // List of contracts to deploy
 const CONTRACTS_TO_DEPLOY: Contract[] = [
-  { name: 'IntentSource', args: [], path: 'contracts/IntentSource.sol:IntentSource' },
+  {
+    name: 'IntentSource',
+    args: [],
+    path: 'contracts/IntentSource.sol:IntentSource',
+  },
   { name: 'Inbox', args: [], path: 'contracts/Inbox.sol:Inbox' },
   // { name: 'HyperProver', args: [], path: 'contracts/prover/HyperProver.sol:HyperProver' },
 ]
@@ -87,7 +90,9 @@ export async function generateDeploymentFile(
 
   // Generate bytecode deployment data for each salt
   for (const salt of salts) {
-    console.log(`Generating deployment data for salt ${JSON.stringify(salt)}...`)
+    console.log(
+      `Generating deployment data for salt ${JSON.stringify(salt)}...`,
+    )
     const data = generateMultipleDeploymentData(salt.value, deployData)
     deploymentData[salt.name] = data
   }
@@ -103,12 +108,12 @@ export async function generateDeploymentFile(
  * @param salt The salt to use for all deployments (32 bytes hex string with 0x prefix)
  * @returns Object with deployment data for all contracts
  */
-export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): any {
-
-
+export function generateMultipleDeploymentData(
+  salt: Hex,
+  chainIDs: string[],
+): any {
   // Initialize the deployment data structure with per-chain objects
   let deploymentData: any
-
 
   // Initialize chain-specific object
   deploymentData = {
@@ -121,11 +126,9 @@ export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): a
   // Making sure that dependencies are available when needed
   const deployedContracts: Record<string, any> = {}
 
-
   for (const contract of CONTRACTS_TO_DEPLOY) {
     const contractName = contract.name
     try {
-
       // Generate the deployment bytecode with the updated args
       const contractData = generateBytecodeDeployData({
         value: 0n,
@@ -144,10 +147,7 @@ export function generateMultipleDeploymentData(salt: Hex, chainIDs: string[]): a
 
       console.log(`Successfully generated ${contractName} deployment data `)
     } catch (error) {
-      console.error(
-        `Error generating ${contractName} deployment data:`,
-        error,
-      )
+      console.error(`Error generating ${contractName} deployment data:`, error)
     }
   }
 
@@ -215,7 +215,7 @@ export function generateBytecodeDeployData(create2Params: {
   })
 
   const encodedArgs = encodeAbiParameters(
-    contractJson.abi[0].inputs,// Assuming the first item in the ABI is the constructor
+    contractJson.abi[0].inputs, // Assuming the first item in the ABI is the constructor
     contract.args,
   )
 
@@ -263,8 +263,8 @@ export function saveDeploymentData(
  */
 export async function fetchDeployData(): Promise<string[]> {
   // Get the URL from environment or use default
-  const CHAIN_DATA_URL = process.env.CHAIN_DATA_URL || PATHS.DEFAULT_CHAIN_DATA_URL
-    
+  const CHAIN_DATA_URL =
+    process.env.CHAIN_DATA_URL || PATHS.DEFAULT_CHAIN_DATA_URL
 
   console.log(`Fetching deployment data from ${CHAIN_DATA_URL}...`)
 
@@ -283,13 +283,17 @@ export async function fetchDeployData(): Promise<string[]> {
     const chainIds = Object.keys(deployData)
 
     if (chainIds.length > 0) {
-      console.log(`Found ${chainIds.length} chain IDs in deployment data: ${chainIds.join(', ')}`)
+      console.log(
+        `Found ${chainIds.length} chain IDs in deployment data: ${chainIds.join(', ')}`,
+      )
       return chainIds
     } else {
       throw new Error('No chain IDs found in deployment data')
     }
   } catch (error) {
     console.error('Error fetching or parsing deployment data:', error)
-    throw new Error(`Failed to fetch or parse deployment data from ${DEPLOY_DATA_URL}: ${(error as Error).message}`)
+    throw new Error(
+      `Failed to fetch or parse deployment data from ${DEPLOY_DATA_URL}: ${(error as Error).message}`,
+    )
   }
 }

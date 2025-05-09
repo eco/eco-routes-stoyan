@@ -4,7 +4,7 @@
  * Manages version information updates across both Solidity contracts and npm packages.
  * This critical step in the semantic-release process ensures version consistency
  * between on-chain and off-chain components of the protocol.
- * 
+ *
  * The version module handles the complex task of synchronizing version information
  * across different file types and ensuring that deployed smart contracts properly
  * report their version information through standardized interfaces. This includes
@@ -17,7 +17,7 @@
  * 4. Embedding Git commit hash information in deployed contract versions
  * 5. Ensuring version consistency across all protocol components
  * 6. Generating version changelogs and documentation
- * 
+ *
  * This synchronization is essential for protocol security and auditability,
  * allowing both off-chain and on-chain verification of deployed contract versions
  * and maintaining a clear lineage between source code and deployed bytecode.
@@ -33,7 +33,7 @@ dotenv.config()
 
 /**
  * Updates version information in all relevant files across the codebase.
- * 
+ *
  * This function implements the "version" step in the semantic-release lifecycle,
  * which runs after analyzeCommits (to determine the next version) and before
  * prepare (which builds and deploys the contracts). It ensures consistent versioning
@@ -48,7 +48,7 @@ dotenv.config()
  * @param pluginConfig - Plugin configuration options from semantic-release
  * @param context - Semantic release context with version, logger, and environment information
  * @returns Promise that resolves when all version updates are complete
- * 
+ *
  * @throws Will throw an error if any file updates fail
  */
 export async function version(
@@ -65,13 +65,13 @@ export async function version(
   // Use the custom RELEASE_VERSION environment variable if available
   const environmentVersion = process.env.RELEASE_VERSION
   const version = environmentVersion || nextRelease.version
-  
+
   if (environmentVersion) {
     logger.log(`Using custom version from environment: ${version}`)
   } else {
     logger.log(`Using semantically determined version: ${version}`)
   }
-  
+
   logger.log(`Updating version information to ${version}`)
 
   try {
