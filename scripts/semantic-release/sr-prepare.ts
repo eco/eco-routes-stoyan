@@ -87,15 +87,7 @@ export async function prepare(
     return
   }
 
-  // Use the custom RELEASE_VERSION environment variable if available
-  const environmentVersion = process.env.RELEASE_VERSION
-  const version = environmentVersion || nextRelease.version
-
-  // Update the nextRelease object to use our custom version
-  if (environmentVersion) {
-    nextRelease.version = environmentVersion
-    logger.log(`Using custom version from environment: ${version}`)
-  }
+  const version = nextRelease.version || process.env.RELEASE_VERSION
 
   logger.log(`Preparing to deploy contracts for version ${version}`)
 

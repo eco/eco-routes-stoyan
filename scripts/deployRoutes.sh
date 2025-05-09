@@ -99,7 +99,6 @@ echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
 
     # Construct Foundry command
     FOUNDRY_CMD="MAILBOX=\"$MAILBOX_CONTRACT\" ROUTER_CONTRACT=\"$ROUTER_CONTRACT\" SALT=\"$SALT\" DEPLOY_FILE=\"$RESULTS_FILE\" forge script scripts/Deploy.s.sol \
-            --verify \
             --rpc-url \"$RPC_URL\" \
             --slow \
             --broadcast \

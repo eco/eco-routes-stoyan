@@ -63,18 +63,13 @@ export async function publish(
   const { nextRelease, logger, cwd } = context
 
   // Use the custom RELEASE_VERSION environment variable if available
-  const environmentVersion = process.env.RELEASE_VERSION
-  let version = nextRelease?.version || ''
+  const version = nextRelease?.version || process.env.RELEASE_VERSION
 
   // Update the version if using a custom one
-  if (environmentVersion) {
-    version = environmentVersion
-    logger.log(`Using custom version from environment: ${version}`)
-
-    // Update nextRelease if it exists
-    if (nextRelease) {
-      nextRelease.version = version
-    }
+  if (!version) {
+    throw new Error(
+      'No version provided. Please set the RELEASE_VERSION or provide a version in the context.',
+    )
   }
 
   const dryRun = !shouldWePublish(version)
