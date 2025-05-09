@@ -77,6 +77,7 @@ echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
 
     RPC_URL=$(echo "$value" | jq -r '.url')
     MAILBOX_CONTRACT=$(echo "$value" | jq -r '.mailbox')
+    ROUTER_CONTRACT=$(echo "$value" | jq -r '.router')
     GAS_MULTIPLIER=$(echo "$value" | jq -r '.gasMultiplier // ""')
 
     if [[ "$RPC_URL" == "null" || -z "$RPC_URL" ]]; then
@@ -97,7 +98,8 @@ echo "$DEPLOY_JSON" | jq -c 'to_entries[]' | while IFS= read -r entry; do
     echo "📬 Mailbox Contract: $MAILBOX_CONTRACT"
 
     # Construct Foundry command
-    FOUNDRY_CMD="MAILBOX=\"$MAILBOX_CONTRACT\" SALT=\"$SALT\" DEPLOY_FILE=\"$RESULTS_FILE\" forge script scripts/Deploy.s.sol \
+    FOUNDRY_CMD="MAILBOX=\"$MAILBOX_CONTRACT\" ROUTER_CONTRACT=\"$ROUTER_CONTRACT\" SALT=\"$SALT\" DEPLOY_FILE=\"$RESULTS_FILE\" forge script scripts/Deploy.s.sol \
+            --verify \
             --rpc-url \"$RPC_URL\" \
             --slow \
             --broadcast \

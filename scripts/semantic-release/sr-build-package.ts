@@ -400,7 +400,7 @@ export type EcoChainIdsEnv = keyof typeof EcoProtocolAddresses
 /**
  * The chain ids of the eco protocol, exluding the different environments. 
  */
-export type EcoChainIds = Exclude<EcoChainIdsEnv, ${"`${string}-${string}`"}>;
+export type EcoChainIds = Exclude<EcoChainIdsEnv, ${"`${number}`"}> extends ${"`${infer N extends number}`"} ? N : never;
 export type ContractName<T extends EcoChainIdsEnv> = keyof typeof EcoProtocolAddresses[T];
 
 /**

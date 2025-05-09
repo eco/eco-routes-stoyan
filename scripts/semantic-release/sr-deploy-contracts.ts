@@ -231,7 +231,7 @@ async function deployContracts(
       // Run the deployment script
       // Create a properly merged environment by spreading process.env first
       const exitCode = await executeProcess(PATHS.DEPLOY_SCRIPT, [],{
-        // ...process.env,  // Spread existing env first
+        ...process.env,  // Spread existing env first
         [ENV_VARS.SALT]: salt,  // Then override with our custom value
       }, cwd)
       logger.log(`Deployment process exited with code ${exitCode}`)
