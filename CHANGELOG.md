@@ -1,3 +1,10 @@
+## [2.0.1512](https://github.com/eco/er-test/compare/v2.0.1511...v2.0.1512) (2025-05-10)
+
+
+### Bug Fixes
+
+* package syntax and add changelog ([41d4de0](https://github.com/eco/er-test/commit/41d4de0bb64234684d0b1dfd8b8359baa4c62966))
+
 ## [2.0.1511](https://github.com/eco/er-test/compare/vv2.0.1510...v2.0.1511) (2025-05-10)
 
 
