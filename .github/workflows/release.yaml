@@ -110,7 +110,7 @@ jobs:
       - name: Build TypeScript
         uses: borales/actions-yarn@v5
         with:
-          cmd: yarn tsc
+          cmd: tsc
 
       # Run semantic-release with access to the AWS secrets
       - name: Run Semantic Release
