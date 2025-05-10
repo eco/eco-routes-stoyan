@@ -1,3 +1,10 @@
+## [2.0.1513](https://github.com/eco/er-test/compare/v2.0.1512...v2.0.1513) (2025-05-10)
+
+
+### Bug Fixes
+
+* disable secondary "@semantic-release/npm". its handled in the custom plugin ([2a8fa32](https://github.com/eco/er-test/commit/2a8fa3286943b8e3938aaf311c91a1068453aa8a))
+
 ## [2.0.1512](https://github.com/eco/er-test/compare/v2.0.1511...v2.0.1512) (2025-05-10)
 
 
