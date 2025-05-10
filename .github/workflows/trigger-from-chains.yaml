@@ -48,9 +48,11 @@ jobs:
       # Create empty commit with release_type as the message
       - name: Create Release Trigger Commit
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "semantic-release-bot"
+          git config --global user.email "semantic-release-bot@users.noreply.github.com"
 
+          # Set remote URL using PAT instead of GITHUB_TOKEN
+          git remote set-url origin https://semantic-release-bot:${PAT}@github.com/eco/er-test.git
           # Get default branch
           DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
           echo "Default branch is: $DEFAULT_BRANCH"
@@ -99,3 +101,5 @@ jobs:
 
           echo "Created and pushed empty commit with release type: $RELEASE_TYPE to $DEFAULT_BRANCH"
           echo "This commit will trigger the main release workflow."
+    env:
+      PAT: ${{ secrets.RELEASE_PAT }}  # Store your PAT as a repository secret
