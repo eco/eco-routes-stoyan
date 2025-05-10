@@ -22,7 +22,6 @@
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
     "./dist/semantic-release/index.js",
-    "@semantic-release/npm",
     [
       "@semantic-release/git",
       {
