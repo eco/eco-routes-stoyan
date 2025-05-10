@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:eco/er-test.git"
+    "url": "git+ssh://git@github.com/eco/er-test.git"
   },
   "author": "Eco Engineering <eng@eco.com>",
   "license": "SEE LICENSE IN LICENSE",
