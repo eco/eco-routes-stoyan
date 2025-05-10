@@ -1,6 +1,6 @@
 {
   "branches": ["main", "semantic-release"],
-  "repositoryUrl": "https://github.com/eco/eco-routes-stoyan.git",
+  "repositoryUrl": "git@github.com:eco/er-test.git",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
