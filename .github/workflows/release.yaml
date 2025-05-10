@@ -106,6 +106,12 @@ jobs:
           echo "Last commit author: $(git log -1 --pretty=%an)"
           echo "Last commit date: $(git log -1 --pretty=%ad)"
 
+      # Build TypeScript files, this is for the semantic-release plugin we made
+      - name: Build TypeScript
+        uses: borales/actions-yarn@v5
+        with:
+          cmd: yarn tsc
+
       # Run semantic-release with access to the AWS secrets
       - name: Run Semantic Release
         id: semantic-release

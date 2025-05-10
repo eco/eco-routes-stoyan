@@ -293,7 +293,7 @@ export async function fetchDeployData(): Promise<string[]> {
   } catch (error) {
     console.error('Error fetching or parsing deployment data:', error)
     throw new Error(
-      `Failed to fetch or parse deployment data from ${DEPLOY_DATA_URL}: ${(error as Error).message}`,
+      `Failed to fetch or parse deployment data from ${'DEPLOY_DATA_URL'}: ${(error as Error).message}`,
     )
   }
 }
