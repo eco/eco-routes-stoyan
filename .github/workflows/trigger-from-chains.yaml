@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Needed for pushing commits
+      actions: write # Needed for triggering other workflows
 
     steps:
       - name: Checkout
