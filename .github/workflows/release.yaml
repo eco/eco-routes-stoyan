@@ -9,6 +9,8 @@ on:
     branches:
       - main
       - semantic-release
+  repository_dispatch:
+    types: [manual-release-trigger]
 
 jobs:
   # First job: Fetch secrets from AWS Secrets Manager
