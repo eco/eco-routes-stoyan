@@ -1,3 +1,12 @@
+## [2.0.1517](https://github.com/eco/er-test/compare/v2.0.1516...v2.0.1517) (2025-05-12)
+
+
+### Bug Fixes
+
+* make semantic-release beta ([d92d63a](https://github.com/eco/er-test/commit/d92d63a99364fb80ce84c22d539a55c29d000b53))
+* test channel release ([2e60ed3](https://github.com/eco/er-test/commit/2e60ed332f4a2432f8a8fdc49afbfe0b0d799087))
+* updating the package name ([dc39630](https://github.com/eco/er-test/commit/dc39630ef6dc900cc8250355cac9f4037b0338d9))
+
 ## [2.0.1517-beta.2](https://github.com/eco/er-test/compare/v2.0.1517-beta.1...v2.0.1517-beta.2) (2025-05-12)
 
 ### Bug Fixes
