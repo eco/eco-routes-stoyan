@@ -96,6 +96,7 @@ docs/slither/vulnerability.txt
 # docs/gasReport.txt
 #Deployment data
 deploy/deployments
+build/
 
 # outputs
 output/proofGenerationOutput.json

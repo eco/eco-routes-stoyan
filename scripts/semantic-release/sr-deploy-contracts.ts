@@ -18,7 +18,8 @@
  */
 import path from 'path'
 import fs from 'fs'
-import { parse as parseCSV } from 'csv-parse'
+// eslint-disable-next-line node/no-missing-import
+import { parse as parseCSV } from 'csv-parse/sync'
 import { determineSalts } from '../utils/extract-salt'
 import { getAddress, Hex } from 'viem'
 import { SemanticContext } from './sr-prepare'
