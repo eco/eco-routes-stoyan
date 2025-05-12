@@ -1,5 +1,11 @@
 {
-  "branches": ["main", "semantic-release"],
+  "branches": [
+    "main",
+    {
+      "name": "semantic-release",
+      "prerelease": "beta"
+    }
+  ],
   "repositoryUrl": "git@github.com:eco/er-test.git",
   "plugins": [
     [
