@@ -284,8 +284,8 @@ yarn run tsx scripts/semantic-release/verify-contracts.ts
 
 The semantic-release process builds and publishes two npm packages:
 
-1. **@eco-foundation/eco-routes**: The main package containing both Solidity contracts and TypeScript types
-2. **@eco-foundation/eco-routes-ts**: TypeScript-only package for frontend applications
+1. **@eco-foundation/routes**: The main package containing both Solidity contracts and TypeScript types
+2. **@eco-foundation/routes-ts**: TypeScript-only package for frontend applications
 
 ### Package Features
 
@@ -305,7 +305,7 @@ import {
   IntentSourceAbi,
   encodeIntent,
   hashIntent,
-} from "@eco-foundation/eco-routes"
+} from "@eco-foundation/routes"
 
 // Get IntentSource address for Optimism (chain ID 10)
 const intentSourceAddress = EcoProtocolAddresses["10"].IntentSource

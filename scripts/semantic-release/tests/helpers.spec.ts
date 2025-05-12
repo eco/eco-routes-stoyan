@@ -40,7 +40,7 @@ jest.mock('semver', () => ({
 
 describe('Semantic Release Helpers', () => {
   // Test constants
-  const testPackageName = '@eco-foundation/eco-routes'
+  const testPackageName = '@eco-foundation/routes'
   const testVersion = '1.2.3'
   const testDir = '/test/dir'
 

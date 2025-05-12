@@ -1,17 +1,15 @@
 ## [2.0.1517-beta.1](https://github.com/eco/er-test/compare/v2.0.1516...v2.0.1517-beta.1) (2025-05-12)
 
-
 ### Bug Fixes
 
-* make semantic-release beta ([d92d63a](https://github.com/eco/er-test/commit/d92d63a99364fb80ce84c22d539a55c29d000b53))
+- make semantic-release beta ([d92d63a](https://github.com/eco/er-test/commit/d92d63a99364fb80ce84c22d539a55c29d000b53))
 
 ## [2.0.1516](https://github.com/eco/er-test/compare/v2.0.1515...v2.0.1516) (2025-05-12)
 
-
 ### Bug Fixes
 
-* csv parser import ([8deee4f](https://github.com/eco/er-test/commit/8deee4f29fa18fb086219f6bf08a06e719ac3f9c))
-* fixing the linter and adding deps ([4280117](https://github.com/eco/er-test/commit/4280117a03d842fc7ee2b6fc027f5ac67d196de9))
+- csv parser import ([8deee4f](https://github.com/eco/er-test/commit/8deee4f29fa18fb086219f6bf08a06e719ac3f9c))
+- fixing the linter and adding deps ([4280117](https://github.com/eco/er-test/commit/4280117a03d842fc7ee2b6fc027f5ac67d196de9))
 
 ## [2.0.1515](https://github.com/eco/er-test/compare/v2.0.1514...v2.0.1515) (2025-05-10)
 

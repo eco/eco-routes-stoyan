@@ -41,8 +41,8 @@ jest.mock('../constants', () => {
     ...originalModule,
     getBuildDirPath: jest.fn(() => '/test/build/path'),
     PACKAGE: {
-      ROUTES_PACKAGE_NAME: '@eco-foundation/eco-routes',
-      ROUTES_TS_PACKAGE_NAME: '@eco-foundation/eco-routes-ts',
+      ROUTES_PACKAGE_NAME: '@eco-foundation/routes',
+      ROUTES_TS_PACKAGE_NAME: '@eco-foundation/routes-ts',
     },
     ENV_VARS: {
       CI: 'CI',
@@ -125,10 +125,10 @@ describe('sr-publish', () => {
 
       // Should log successful publish
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes@1.0.0 published successfully',
+        'Package @eco-foundation/routes@1.0.0 published successfully',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes-ts@1.0.0 published successfully',
+        'Package @eco-foundation/routes-ts@1.0.0 published successfully',
       )
     })
 
@@ -150,10 +150,10 @@ describe('sr-publish', () => {
         'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'DRY RUN: Not really publishing: @eco-foundation/eco-routes@1.0.0',
+        'DRY RUN: Not really publishing: @eco-foundation/routes@1.0.0',
       )
       expect(context.logger.log).toHaveBeenCalledWith(
-        'Package @eco-foundation/eco-routes@1.0.0 would be published successfully',
+        'Package @eco-foundation/routes@1.0.0 would be published successfully',
       )
     })
 
@@ -269,10 +269,10 @@ describe('sr-publish', () => {
         'DRY RUN: Skipping actual npm publish. Would have published packages to npm.',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Would publish: @eco-foundation/eco-routes@2.0.0',
+        'Would publish: @eco-foundation/routes@2.0.0',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Would publish: @eco-foundation/eco-routes-ts@2.0.0',
+        'Would publish: @eco-foundation/routes-ts@2.0.0',
       )
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('Not publishing. Set'),

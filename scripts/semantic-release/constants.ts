@@ -82,8 +82,8 @@ export const ENV_VARS_REQUIRED = [
  * Used to maintain consistent naming between JavaScript and Solidity components
  */
 export const PACKAGE = {
-  ROUTES_PACKAGE_NAME: '@eco-foundation/eco-routes',
-  ROUTES_TS_PACKAGE_NAME: '@eco-foundation/eco-routes-ts',
+  ROUTES_PACKAGE_NAME: '@eco-foundation/routes',
+  ROUTES_TS_PACKAGE_NAME: '@eco-foundation/routes-ts',
 }
 
 /**
