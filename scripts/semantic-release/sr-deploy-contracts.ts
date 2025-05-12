@@ -304,7 +304,10 @@ function parseDeploymentResults(
     }
 
     // Parse CSV content
-    const records = parseCSV(fileContent, parseOptions) as unknown as DeploymentRecord[]
+    const records = parseCSV(
+      fileContent,
+      parseOptions,
+    ) as unknown as DeploymentRecord[]
     // Define the path for the fullDeploy.csv file
     const fullDeployPath = path.join(
       PATHS.OUTPUT_DIR,
