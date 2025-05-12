@@ -1,3 +1,11 @@
+## [2.0.1516](https://github.com/eco/er-test/compare/v2.0.1515...v2.0.1516) (2025-05-12)
+
+
+### Bug Fixes
+
+* csv parser import ([8deee4f](https://github.com/eco/er-test/commit/8deee4f29fa18fb086219f6bf08a06e719ac3f9c))
+* fixing the linter and adding deps ([4280117](https://github.com/eco/er-test/commit/4280117a03d842fc7ee2b6fc027f5ac67d196de9))
+
 ## [2.0.1515](https://github.com/eco/er-test/compare/v2.0.1514...v2.0.1515) (2025-05-10)
 
 ### Bug Fixes
