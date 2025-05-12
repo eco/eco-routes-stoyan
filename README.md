@@ -126,7 +126,7 @@ nvm ls
 1. Clone the repo
 
 ```bash
- git clone git@github.com:eco/er-test.git
+ git clone git@github.com:eco/eco-routes.git
 ```
 
 2. Install and build using yarn
@@ -293,6 +293,6 @@ This section is under development. While the tests are not yet operational, the 
 
 ## Contact
 
-Project Link: [https://github.com/eco/er-test](https://github.com/eco/er-test)
+Project Link: [https://github.com/eco/eco-routes](https://github.com/eco/eco-routes)
 
 <p align="right">(<a href="#top">back to top</a>)</p>

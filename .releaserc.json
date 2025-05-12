@@ -6,7 +6,7 @@
       "channel": "beta"
     }
   ],
-  "repositoryUrl": "git@github.com:eco/er-test.git",
+  "repositoryUrl": "git@github.com:eco/eco-routes.git",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
