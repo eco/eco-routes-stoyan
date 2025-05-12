@@ -219,9 +219,6 @@ ALCHEMY_API_KEY=<Your Alchemy API key if using Alchemy RPCs>
 MAILBOX=<Optional: Mailbox contract address for HyperProver>
 ROUTER=<Optional: Router contract address for MetaProver>
 
-# For deployCore.sh
-BYTECODE_PATH=<Path to bytecode JSON file>
-
 # For VerifyResults.sh
 VERIFICATION_KEYS_FILE=<Path to verification keys JSON file>
 VERIFICATION_KEYS=<Optional: JSON string of verification keys>
