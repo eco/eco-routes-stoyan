@@ -67,7 +67,7 @@ export async function executeProcessAsync(
 export async function executeProcess(
   command: string,
   args: string[] = [],
-  env: NodeJS.ProcessEnv = process.env,
+  env: any = process.env,
   cwd: string,
 ): Promise<number> {
   return executeProcessAsync(command, args, {

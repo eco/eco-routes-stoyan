@@ -22,21 +22,10 @@ import {
   encodeDeployData,
   keccak256,
   encodeAbiParameters,
-  parseAbiParameters,
-  zeroAddress,
-  getAbiItem,
-  getContractAddress,
 } from 'viem'
 import fs from 'fs'
 import path from 'path'
 import { PATHS } from './constants'
-
-type FetchData = {
-  [chainId: string]: {
-    url: string
-    mailbox: Hex
-  }
-}
 
 // CREATEX Deployer ABI for the deploy function
 const CREATE_X_ABI = [
@@ -57,8 +46,6 @@ type Contract = {
   path: string
   args: any[]
 }
-// Address of the CREATEXDeployer contract
-const CREATE_X_DEPLOYER_ADDRESS = '0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed'
 
 // List of contracts to deploy
 const CONTRACTS_TO_DEPLOY: Contract[] = [
@@ -113,10 +100,7 @@ export function generateMultipleDeploymentData(
   chainIDs: string[],
 ): any {
   // Initialize the deployment data structure with per-chain objects
-  let deploymentData: any
-
-  // Initialize chain-specific object
-  deploymentData = {
+  const deploymentData: any = {
     salt,
     keccakSalt: keccak256(salt),
     contracts: {},
@@ -176,7 +160,7 @@ export function generateBytecodeDeployData(create2Params: {
   encodedArgs: string
   deployBytecode: Hex
 } {
-  const { value, salt, contract } = create2Params
+  const { salt, contract } = create2Params
   const contractName = contract.name
   // Path to the compiled contract JSON
   const contractJsonPath = path.join(

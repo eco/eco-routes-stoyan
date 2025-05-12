@@ -23,13 +23,11 @@ import fs from 'fs'
 import path from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
-import { stringify as stringifyCSV } from 'csv-stringify/sync'
+import { stringify as stringifyCSV } from 'csv-stringify'
 import { SemanticContext } from './sr-prepare'
-import semverUtils from 'semver-utils'
 import { getPackageInfo, Logger } from './helpers'
 import { getBuildDirPath, PACKAGE } from './constants'
 import { getGitHashShort } from './solidity-version-updater'
-import { determineSalts } from '../utils/extract-salt'
 
 // Define the contract types that form our chain configuration
 // This is used for both CSV headers and TypeScript type definitions
@@ -85,16 +83,10 @@ interface AbiFile {
  */
 export async function buildPackage(context: SemanticContext): Promise<void> {
   const { nextRelease, logger, cwd } = context
-  // Determine salts based on version
-  const { rootSalt, preprodRootSalt } = await determineSalts(
-    nextRelease!.version,
-    logger,
-  )
+
   try {
     // Determine version for npm package retrieval
     const version = nextRelease!.version
-    const parsedVersion = semverUtils.parse(version)
-    const majorMinorVersion = `${parsedVersion.major}.${parsedVersion.minor}`
 
     logger.log(`Building package for version ${version}`)
 

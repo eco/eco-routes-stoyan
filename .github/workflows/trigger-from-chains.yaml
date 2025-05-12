@@ -109,4 +109,4 @@ jobs:
           event-type: manual-release-trigger
           client-payload: '{"ref": "${{ github.ref }}", "release_type": "${{ github.event.inputs.release_type || github.event.client_payload.release_type }}"}'
     env:
-      PAT: ${{ secrets.RELEASE_PAT }}  # Store your PAT as a repository secret
+      PAT: ${{ secrets.RELEASE_PAT }} # Store your PAT as a repository secret

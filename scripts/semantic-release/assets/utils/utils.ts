@@ -20,10 +20,10 @@ import { Abi, AbiParameter } from 'viem'
  * @throws Error if the struct is not found in the ABI
  */
 export function extractAbiStruct<
-  abi extends Abi,
+  AbiExt extends Abi,
   AbiReturn extends readonly AbiParameter[],
->(abi: abi, structName: string): AbiReturn {
-  const obj = extractAbiStructRecursive<abi, AbiReturn>(abi, structName)
+>(abi: AbiExt, structName: string): AbiReturn {
+  const obj = extractAbiStructRecursive<AbiExt, AbiReturn>(abi, structName)
   if (!obj) {
     throw ExtractAbiStructFailed(structName)
   }
@@ -42,9 +42,9 @@ export function extractAbiStruct<
  * @internal This is an internal helper function used by extractAbiStruct
  */
 function extractAbiStructRecursive<
-  abi extends Abi,
+  AbiExt extends Abi,
   AbiReturn extends readonly AbiParameter[],
->(abi: abi, structName: string): AbiReturn | undefined {
+>(abi: AbiExt, structName: string): AbiReturn | undefined {
   for (const item of abi) {
     const obj = item as any
     if (obj.name === structName) {

@@ -18,7 +18,7 @@
  */
 import path from 'path'
 import fs from 'fs'
-import { parse as parseCSV } from 'csv-parse/sync'
+import { parse as parseCSV } from 'csv-parse'
 import { determineSalts } from '../utils/extract-salt'
 import { getAddress, Hex } from 'viem'
 import { SemanticContext } from './sr-prepare'
@@ -33,7 +33,6 @@ import dotenv from 'dotenv'
 import { Logger } from './helpers'
 import { validateEnvVariables } from '../utils/envUtils'
 import { executeProcess } from '../utils/processUtils'
-import { generateDeploymentFile } from './gen-bytecode'
 
 dotenv.config()
 
@@ -51,11 +50,6 @@ interface DeploymentRecord {
   ContractAddress: string
   ContractPath: string
   ContractArguments: string
-}
-
-interface DeploymentResult {
-  contracts: Contract[]
-  success: boolean
 }
 
 /**
@@ -130,7 +124,7 @@ async function generateDeploymentAddressesJSON(
   contracts: Contract[],
   context: SemanticContext,
 ): Promise<void> {
-  const { nextRelease, logger, cwd } = context
+  const { logger, cwd } = context
   logger.log('Creating the deployAddresses.json...')
 
   try {
@@ -310,7 +304,7 @@ function parseDeploymentResults(
     }
 
     // Parse CSV content
-    const records = parseCSV(fileContent, parseOptions) as DeploymentRecord[]
+    const records = parseCSV(fileContent, parseOptions) as unknown as DeploymentRecord[]
     // Define the path for the fullDeploy.csv file
     const fullDeployPath = path.join(
       PATHS.OUTPUT_DIR,
@@ -381,167 +375,5 @@ function parseDeploymentResults(
       )
     }
     return []
-  }
-}
-
-/**
- * Creates verification mapping file with actual contract addresses after deployment
- * This simple file just maps chain IDs and contract names to actual addresses
- * The verification script will read this and the bytecode file to get all needed data
- * Format: ChainID,Environment,ContractName,ContractAddress,ContractPath
- * @param cwd Current working directory
- * @param contracts Array of deployed contract objects
- * @param logger Logger instance
- */
-function updateVerificationFile(
-  cwd: string,
-  contracts: Contract[],
-  logger?: Logger,
-): void {
-  try {
-    const outputDir = path.join(cwd, PATHS.OUTPUT_DIR)
-    const verifyFilePath = path.join(outputDir, 'verify-data.txt')
-    const bytecodePath = path.join(cwd, 'build', PATHS.DEPLOYMENT_BYTECODE_FILE)
-
-    // Ensure output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true })
-      logger?.log(`Created output directory: ${outputDir}`)
-    }
-
-    // Create a new verification file with actual addresses
-    logger?.log(`Creating verification data file at ${verifyFilePath}`)
-
-    // Check if bytecode file exists
-    if (!fs.existsSync(bytecodePath)) {
-      logger?.error(`Bytecode file not found at ${bytecodePath}`)
-      return
-    }
-
-    // Generate verification lines based on deployed contracts
-    const verificationLines: string[] = []
-
-    // Group contracts by environment, chain ID, and contract name for easier lookup
-    // This ensures we preserve all environments and don't overwrite any
-    const contractsByEnvChainName = new Map<
-      string,
-      Map<string, Map<string, Contract>>
-    >()
-
-    for (const contract of contracts) {
-      const environment = contract.environment || 'default'
-      const chainId = contract.chainId.toString()
-      const contractName = contract.name
-
-      // Create nested maps as needed
-      if (!contractsByEnvChainName.has(environment)) {
-        contractsByEnvChainName.set(
-          environment,
-          new Map<string, Map<string, Contract>>(),
-        )
-      }
-
-      const envMap = contractsByEnvChainName.get(environment)!
-
-      if (!envMap.has(chainId)) {
-        envMap.set(chainId, new Map<string, Contract>())
-      }
-
-      const chainMap = envMap.get(chainId)!
-      chainMap.set(contractName, contract)
-    }
-
-    // Create an array to collect all verification entries
-    // Each entry is: { chainId, environment, contractName, contractAddress, contractPath }
-    const verificationEntries: Array<{
-      chainId: string
-      environment: string
-      contractName: string
-      contractAddress: string
-      contractPath: string
-    }> = []
-
-    // First, collect all entries - this preserves all environment/chain combinations
-    for (const [environment, envMap] of contractsByEnvChainName.entries()) {
-      for (const [chainId, contractsMap] of envMap.entries()) {
-        for (const [contractName, contract] of contractsMap.entries()) {
-          // Use contract path from the contract object if available, otherwise use default pattern
-          const contractPath =
-            contract.contractPath ||
-            `contracts/${contractName}.sol:${contractName}`
-
-          // Add to verification entries
-          verificationEntries.push({
-            chainId,
-            environment,
-            contractName,
-            contractAddress: contract.address,
-            contractPath,
-          })
-
-          logger?.log(
-            `Prepared verification data for ${contractName} on chain ${chainId} in environment ${environment} with address ${contract.address}`,
-          )
-        }
-      }
-    }
-
-    // Sort entries to get a consistent output (by chainId then contractName)
-    verificationEntries.sort((a, b) => {
-      // First sort by chainId
-      if (a.chainId !== b.chainId) {
-        return parseInt(a.chainId) - parseInt(b.chainId)
-      }
-      // Then by environment
-      if (a.environment !== b.environment) {
-        return a.environment.localeCompare(b.environment)
-      }
-      // Then by contract name
-      return a.contractName.localeCompare(b.contractName)
-    })
-
-    // Add header line
-    verificationLines.push(
-      'ChainID,Environment,ContractName,ContractAddress,ContractPath',
-    )
-
-    // Generate the verification lines - format matching the CSV
-    // ChainID,Environment,ContractName,ContractAddress,ContractPath
-    for (const entry of verificationEntries) {
-      verificationLines.push(
-        `${entry.chainId},${entry.environment},${entry.contractName},${entry.contractAddress},${entry.contractPath}`,
-      )
-    }
-
-    logger?.log(
-      `Generated ${verificationLines.length - 1} verification entries sorted by chain ID and contract name`,
-    )
-
-    // Write verification data to file
-    fs.writeFileSync(verifyFilePath, verificationLines.join('\n'))
-
-    // Log the results, showing first few entries for verification
-    logger?.log(
-      `Verification data created at ${verifyFilePath} with ${verificationLines.length - 1} entries`,
-    )
-
-    // Debug log the first few entries (up to 3)
-    const samplesToShow = Math.min(3, verificationLines.length - 1)
-    if (samplesToShow > 0) {
-      logger?.log(
-        `First ${samplesToShow} verification entries (of ${verificationLines.length - 1} total):`,
-      )
-      for (let i = 1; i <= samplesToShow; i++) {
-        // Start at 1 to skip header
-        const parts = verificationLines[i].split(',')
-        logger?.log(
-          `  - Chain ${parts[0]}, Environment ${parts[1]}, Contract ${parts[2]}, Address ${parts[3]}`,
-        )
-      }
-    }
-  } catch (error) {
-    logger?.error(
-      `Failed to create verification file: ${(error as Error).message}`,
-    )
   }
 }

@@ -65,11 +65,11 @@ async function main() {
     const result = await publish(pluginConfig, context)
 
     console.log('\n✅ Semantic release simulation completed successfully')
-    return 'result'
+    return result
   } catch (error) {
     console.error('\n❌ Semantic release simulation failed:')
     console.error((error as Error).message)
-    process.exit(1)
+    throw error
   }
 }
 main().catch((err) => {

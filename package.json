@@ -120,6 +120,7 @@
     "prettier-plugin-solidity": "^1.4.1",
     "rimraf": "^5.0.5",
     "semantic-release": "^23.0.0",
+    "semver": "^7.7.1",
     "semver-utils": "^1.1.4",
     "solhint": "^4.0.0",
     "solhint-plugin-eco": "^0.1.0",
