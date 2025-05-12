@@ -1,3 +1,10 @@
+## [2.0.1517-beta.1](https://github.com/eco/er-test/compare/v2.0.1516...v2.0.1517-beta.1) (2025-05-12)
+
+
+### Bug Fixes
+
+* make semantic-release beta ([d92d63a](https://github.com/eco/er-test/commit/d92d63a99364fb80ce84c22d539a55c29d000b53))
+
 ## [2.0.1516](https://github.com/eco/er-test/compare/v2.0.1515...v2.0.1516) (2025-05-12)
 
 
