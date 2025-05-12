@@ -1,3 +1,10 @@
+## [2.0.1515](https://github.com/eco/er-test/compare/v2.0.1514...v2.0.1515) (2025-05-10)
+
+
+### Bug Fixes
+
+* trigger patch release ([bd1b1f5](https://github.com/eco/er-test/commit/bd1b1f547edba09f8fa6a268d028fed291ecb4b2))
+
 ## [2.0.1514](https://github.com/eco/er-test/compare/v2.0.1513...v2.0.1514) (2025-05-10)
 
 ### Bug Fixes
