@@ -44,6 +44,7 @@ export interface SemanticNextRelease {
   gitTag: string
   notes: string
   type?: string
+  channel?: string
 }
 
 export interface SemanticPluginConfig {

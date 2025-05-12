@@ -88,8 +88,11 @@ export async function buildPackage(context: SemanticContext): Promise<void> {
   try {
     // Determine version for npm package retrieval
     const version = nextRelease!.version
+    const channel = nextRelease!.channel || 'latest'
 
-    logger.log(`Building package for version ${version}`)
+    logger.log(
+      `Building package for version ${version} with channel ${channel}`,
+    )
 
     // Get local deployment addresses
     const localAddressesPath = path.join(cwd, 'build', 'deployAddresses.json')

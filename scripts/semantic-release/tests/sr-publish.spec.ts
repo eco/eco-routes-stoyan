@@ -157,23 +157,23 @@ describe('sr-publish', () => {
       )
     })
 
-    it('should use beta tag for prerelease versions', async () => {
+    it('should use channel from context as the npm tag', async () => {
       // Set environment to trigger actual publishing
       process.env[ENV_VARS.CI] = 'true'
 
-      // Set prerelease context
-      const prereleaseContext = {
+      // Set context with channel
+      const channelContext = {
         ...context,
         nextRelease: {
           ...context.nextRelease!,
-          type: 'prerelease',
-          version: '1.0.0-beta.1',
+          version: '1.0.0',
+          channel: 'beta',
         },
       }
 
-      await publish(pluginConfig, prereleaseContext)
+      await publish(pluginConfig, channelContext)
 
-      // Should execute yarn publish with beta tag
+      // Should execute yarn publish with beta tag from the channel
       expect(exec).toHaveBeenCalledTimes(2)
       expect(exec).toHaveBeenCalledWith(
         'yarn publish --tag beta',

@@ -81,9 +81,10 @@ export async function publish(
 
   try {
     // Determine the tag to use for publishing
-    // Use 'latest' for stable releases, 'beta' for prerelease versions
-    const cleanVersion = version.split('-')
-    const tag = cleanVersion.length > 1 ? cleanVersion[1] : 'latest'
+    // Use 'latest' for stable releases, or the channel defined in .releaserc.json
+    // Get the channel from branch configuration or use the default ('latest')
+    const channel = context.nextRelease?.channel || 'latest'
+    const tag = channel
 
     logger.log(`Publishing packages version ${version} with tag ${tag}`)
 
