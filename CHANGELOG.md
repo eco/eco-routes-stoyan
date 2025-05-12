@@ -1,3 +1,10 @@
+## [2.0.1518](https://github.com/eco/er-test/compare/v2.0.1517...v2.0.1518) (2025-05-12)
+
+
+### Bug Fixes
+
+* fix import ([3038dab](https://github.com/eco/er-test/commit/3038dabe4a3907a634f185799f541e9e4309a54c))
+
 ## [2.0.1517](https://github.com/eco/er-test/compare/v2.0.1516...v2.0.1517) (2025-05-12)
 
 
