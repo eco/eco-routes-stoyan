@@ -1,3 +1,10 @@
+## [2.0.1517-beta.2](https://github.com/eco/er-test/compare/v2.0.1517-beta.1...v2.0.1517-beta.2) (2025-05-12)
+
+
+### Bug Fixes
+
+* updating the package name ([dc39630](https://github.com/eco/er-test/commit/dc39630ef6dc900cc8250355cac9f4037b0338d9))
+
 ## [2.0.1517-beta.1](https://github.com/eco/er-test/compare/v2.0.1516...v2.0.1517-beta.1) (2025-05-12)
 
 ### Bug Fixes
